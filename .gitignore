@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Editor / OS cruft
+*.swp
+*~
+
+# Node (only if tooling is added later)
+node_modules/
