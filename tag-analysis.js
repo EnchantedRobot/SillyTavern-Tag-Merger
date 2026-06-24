@@ -1,28 +1,11 @@
 // tag-analysis.js
-// Pure tag-analysis logic — no DOM, no SillyTavern globals.
-// Safe to import in a browser or run under Node for offline testing.
-
-// Minimum normalized-key length before fuzzy matching is allowed. Short tags
-// like "elf"/"elk" are too easy to merge wrongly, so we never fuzzy-merge them.
-const FUZZY_MIN_LEN = 4;
-// Default similarity threshold (0..1) for the fuzzy pass. Configurable from the
-// extensions panel; stored in localStorage as 'ctm-fuzzy-threshold'.
-// 0.80 is a reasonable aggressive default — users can dismiss bad groups easily.
-export const FUZZY_THRESHOLD_DEFAULT = 0.80;
-
-/**
- * Collapse case / punctuation / whitespace so trivially-different tags share a key.
- * "#Female", "female", "fe-male", "FE MALE" -> "female".
- * @param {string} tag
- * @returns {string}
- */
-export function normalizeKey(tag) {
-    return String(tag)
-        .toLowerCase()
-        .replace(/^#+/, '')
-        .replace(/[\s\-_]+/g, '')
-        .trim();
-}
+// Pure tag logic — no DOM, no SillyTavern globals. Safe to import in a browser
+// or run under Node.
+//
+// The live extension is mapping-driven: a persistent `{ canonical: [variant…] }`
+// dictionary is the source of truth. This module turns the cards + that mapping
+// into display buckets and applies the mapping to a card's tag list. The base
+// dictionary is generated offline by scripts/build-mapping.py.
 
 /**
  * Read the embedded card tags off a SillyTavern character object.
@@ -42,7 +25,7 @@ export function getCardTags(char) {
  * @param {object[]} characters
  * @returns {Map<string, {count: number, avatars: Set<string>}>} keyed by the exact tag string
  */
-export function scanTags(characters) {
+function scanTags(characters) {
     const stats = new Map();
     for (const char of characters ?? []) {
         const avatar = char?.avatar ?? '';
@@ -64,118 +47,31 @@ export function scanTags(characters) {
 }
 
 /**
- * Group exact-normalized variants together.
- * @param {Map<string, {count:number, avatars:Set<string>}>} tagStats
- * @returns {Array<{key:string, variants:Array<{tag:string,count:number,avatars:Set<string>}>}>}
- */
-export function groupExact(tagStats) {
-    const groups = new Map();
-    for (const [tag, entry] of tagStats) {
-        const key = normalizeKey(tag);
-        if (!key) continue;
-        let group = groups.get(key);
-        if (!group) {
-            group = { key, variants: [] };
-            groups.set(key, group);
-        }
-        group.variants.push({ tag, count: entry.count, avatars: entry.avatars });
-    }
-    return [...groups.values()];
-}
-
-/** Levenshtein edit distance between two strings. */
-function levenshtein(a, b) {
-    if (a === b) return 0;
-    if (!a.length) return b.length;
-    if (!b.length) return a.length;
-    let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
-    for (let i = 0; i < a.length; i++) {
-        const curr = [i + 1];
-        for (let j = 0; j < b.length; j++) {
-            const cost = a[i] === b[j] ? 0 : 1;
-            curr[j + 1] = Math.min(prev[j + 1] + 1, curr[j] + 1, prev[j] + cost);
-        }
-        prev = curr;
-    }
-    return prev[b.length];
-}
-
-/** Similarity ratio in [0,1] derived from edit distance. */
-function similarity(a, b) {
-    const maxLen = Math.max(a.length, b.length);
-    if (maxLen === 0) return 1;
-    return 1 - levenshtein(a, b) / maxLen;
-}
-
-/**
- * Second pass: merge exact groups whose normalized keys are very similar.
- * Conservative — guarded by FUZZY_MIN_LEN and FUZZY_THRESHOLD. Merged-via-fuzzy
- * groups are flagged so the UI can default them to opt-in.
- * @param {Array<{key:string, variants:Array}>} exactGroups
- * @param {number} [threshold]  similarity cutoff; defaults to FUZZY_THRESHOLD_DEFAULT
- * @returns {Array<{keys:string[], variants:Array, fuzzy:boolean}>}
- */
-export function fuzzyMergeGroups(exactGroups, threshold = FUZZY_THRESHOLD_DEFAULT) {
-    // Sort by total usage desc so larger groups act as the "anchor" key.
-    const sorted = [...exactGroups].sort((a, b) =>
-        b.variants.reduce((s, v) => s + v.count, 0) - a.variants.reduce((s, v) => s + v.count, 0));
-
-    const merged = []; // { keys, variants, fuzzy }
-    for (const group of sorted) {
-        let target = null;
-        if (group.key.length >= FUZZY_MIN_LEN) {
-            for (const m of merged) {
-                const matches = m.keys.some(k =>
-                    k.length >= FUZZY_MIN_LEN && similarity(k, group.key) >= threshold);
-                if (matches) { target = m; break; }
-            }
-        }
-        if (target) {
-            target.keys.push(group.key);
-            target.variants.push(...group.variants);
-            target.fuzzy = true;
-        } else {
-            merged.push({ keys: [group.key], variants: [...group.variants], fuzzy: false });
-        }
-    }
-    return merged;
-}
-
-/**
- * Pick the canonical display tag for a group of variants.
+ * Pick a clean display tag for a freshly-created group (e.g. "New group from
+ * this tag"). Not used for the persisted mapping's existing keys.
  *
  * Priority:
- *   1. Variants that start directly with a capital letter (no # prefix) — most
- *      frequent wins, returned verbatim. Covers "Arranged Marriage", "AnyPOV", etc.
- *   2. Variants that start with # followed by a capital letter — most frequent
- *      wins, the leading # is stripped, rest returned verbatim.
- *   3. Fallback: no clean-capital variant exists — pick most frequent overall,
- *      strip any #, collapse separators, Title Case.
- *
+ *   1. A variant that starts with a capital letter (no #) — most frequent wins,
+ *      returned verbatim ("Arranged Marriage", "AnyPOV").
+ *   2. A variant that starts with # then a capital — leading # stripped.
+ *   3. Otherwise synthesise from the most-frequent variant: strip #, collapse
+ *      separators, Title Case (unless it's already intentional mixed-case).
  * @param {Array<{tag:string,count:number}>} variants
  * @returns {string}
  */
 export function pickCanonical(variants) {
     const byFreq = (a, b) => b.count - a.count || a.tag.localeCompare(b.tag);
 
-    // 1. Starts with a capital letter (no # prefix).
     const cleanCaps = variants.filter(v => /^[A-Z]/.test(v.tag));
-    if (cleanCaps.length > 0) {
-        return [...cleanCaps].sort(byFreq)[0].tag;
-    }
+    if (cleanCaps.length > 0) return [...cleanCaps].sort(byFreq)[0].tag;
 
-    // 2. Starts with # then a capital letter.
     const hashCaps = variants.filter(v => /^#+[A-Z]/.test(v.tag));
-    if (hashCaps.length > 0) {
-        return [...hashCaps].sort(byFreq)[0].tag.replace(/^#+/, '');
-    }
+    if (hashCaps.length > 0) return [...hashCaps].sort(byFreq)[0].tag.replace(/^#+/, '');
 
-    // 3. Nothing clean — synthesise from the most-frequent variant.
     const top = [...variants].sort(byFreq)[0];
     const stripped = top.tag.replace(/^#+/, '');
     const isAllLower = stripped === stripped.toLowerCase();
     const isAllUpper = stripped === stripped.toUpperCase();
-    // Mixed-case without a hash is already intentional styling — keep it.
     if (!isAllLower && !isAllUpper) return stripped;
 
     return stripped
@@ -188,62 +84,98 @@ export function pickCanonical(variants) {
 }
 
 /**
- * Full analysis: characters -> review rows.
- * A row is emitted whenever applying it would change at least one tag string
- * (a multi-variant merge, or a single messy tag that needs cleaning/renaming).
- * Variants retain their `avatars` (card list) so the UI can recompute card
- * counts after the user moves variants between groups.
+ * Turn the cards + the persistent mapping into display buckets.
+ *
+ * Every canonical in the mapping becomes a group, even if none of its variants
+ * appear on any card (the dictionary is shown in full). Declared variants that
+ * aren't observed appear with count 0. Every observed tag that matches a
+ * declared variant or canonical (case-insensitively) joins that group; every
+ * other observed tag falls into `unassigned`.
+ *
+ * Tags listed in `removedTags` (junk to be deleted) form a third bucket and are
+ * excluded from `unassigned`. A tag claimed by both a canonical and the removed
+ * list stays with its canonical (mapping is the more specific intent).
+ *
  * @param {object[]} characters
- * @param {number} [fuzzyThreshold]  passed through to fuzzyMergeGroups
- * @returns {Array<{canonical:string, variants:Array<{tag:string,count:number,avatars:string[]}>, cardCount:number, fuzzy:boolean}>}
+ * @param {Object<string,string[]>} mapping  canonical -> variant strings
+ * @param {string[]} [removedTags]  tag strings flagged as junk
+ * @returns {{groups: Array<{canonical:string, variants:Array<{tag:string,count:number,avatars:string[]}>}>, unassigned: Array<{tag:string,count:number,avatars:string[]}>, removed: Array<{tag:string,count:number,avatars:string[]}>}}
  */
-export function analyze(characters, fuzzyThreshold) {
+export function buildBuckets(characters, mapping, removedTags) {
+    const map = mapping || {};
     const stats = scanTags(characters);
-    const exact = groupExact(stats);
-    const groups = fuzzyMergeGroups(exact, fuzzyThreshold);
 
-    const rows = [];
-    for (const group of groups) {
-        const canonical = pickCanonical(group.variants);
-        // Union of affected cards across all variants in the group.
-        const affected = new Set();
-        for (const v of group.variants) for (const a of v.avatars) affected.add(a);
-
-        // Skip multi-variant groups where nothing actually changes (degenerate — can't
-        // occur since variant tag strings are unique, but kept for safety).
-        // Single-variant rows always pass through so they appear in the Excluded bin
-        // and can be queued for deletion even when no rename is needed (e.g. "SFW").
-        const changes = group.variants.some(v => v.tag !== canonical);
-        if (!changes && group.variants.length > 1) continue;
-
-        rows.push({
-            canonical,
-            variants: group.variants
-                .map(v => ({ tag: v.tag, count: v.count, avatars: [...v.avatars] }))
-                .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)),
-            cardCount: affected.size,
-            fuzzy: group.fuzzy,
-        });
+    // Lowercased variant/canonical -> canonical key.
+    const lookup = new Map();
+    for (const [canonical, variants] of Object.entries(map)) {
+        lookup.set(canonical.toLowerCase(), canonical);
+        for (const v of variants ?? []) lookup.set(String(v).toLowerCase(), canonical);
     }
-    // Biggest impact first.
-    rows.sort((a, b) => b.cardCount - a.cardCount || a.canonical.localeCompare(b.canonical));
-    return rows;
+
+    // Removed bucket, keyed by exact string. Seed declared junk at count 0 so the
+    // full removal list shows even when none of it appears on a card.
+    const removedMap = new Map();
+    const removedLookup = new Set();
+    for (const t of removedTags ?? []) {
+        removedLookup.add(String(t).toLowerCase());
+        if (!removedMap.has(String(t))) removedMap.set(String(t), { tag: String(t), count: 0, avatars: [] });
+    }
+
+    // canonical -> Map(exact tag string -> variant). Seed with declared variants
+    // (count 0) so the full dictionary round-trips even when nothing on a card
+    // uses it. Keying by the exact string keeps distinct case variants ("female"
+    // and "Female") as separate chips instead of clobbering each other's counts.
+    const groupMap = new Map();
+    const ensure = (c) => { let g = groupMap.get(c); if (!g) { g = new Map(); groupMap.set(c, g); } return g; };
+    for (const [canonical, variants] of Object.entries(map)) {
+        const g = ensure(canonical);
+        for (const v of variants ?? []) {
+            if (!g.has(String(v))) g.set(String(v), { tag: String(v), count: 0, avatars: [] });
+        }
+    }
+
+    const unassigned = [];
+    for (const [tag, entry] of stats) {
+        const variant = { tag, count: entry.count, avatars: [...entry.avatars] };
+        const canonical = lookup.get(tag.toLowerCase());
+        if (canonical) {
+            ensure(canonical).set(tag, variant); // observed string wins over the count-0 seed
+        } else if (removedLookup.has(tag.toLowerCase())) {
+            removedMap.set(tag, variant); // observed string wins over the count-0 seed
+        } else {
+            unassigned.push(variant);
+        }
+    }
+
+    const byCount = (a, b) => b.count - a.count || a.tag.localeCompare(b.tag);
+    const groups = [...groupMap.entries()].map(([canonical, vmap]) => ({
+        canonical,
+        variants: [...vmap.values()].sort(byCount),
+    }));
+    return {
+        groups,
+        unassigned: unassigned.sort(byCount),
+        removed: [...removedMap.values()].sort(byCount),
+    };
 }
 
 /**
  * Apply approved rows to one card's tag list.
- * Removes any matched variant (case-insensitive) and adds the canonical,
- * preserving unrelated tags and their order; dedupes case-insensitively.
+ * Renames any matched variant to its canonical, deletes any tag in `removedSet`
+ * (case-insensitive), preserves unrelated tags and their order, and dedupes
+ * case-insensitively.
  * @param {string[]} currentTags
  * @param {Array<{canonical:string, variants:Array<{tag:string}>}>} approvedRows
+ * @param {Set<string>} [removedSet]  lowercased tags to delete entirely
  * @returns {string[]|null} new tag array, or null if nothing changed
  */
-export function applyRowsToTags(currentTags, approvedRows) {
+export function applyRowsToTags(currentTags, approvedRows, removedSet) {
     // Map lowercased variant -> canonical for every approved row.
     const variantToCanonical = new Map();
     for (const row of approvedRows) {
         for (const v of row.variants) variantToCanonical.set(v.tag.toLowerCase(), row.canonical);
     }
+    const removed = removedSet ?? new Set();
 
     const result = [];
     const seenLower = new Set();
@@ -257,6 +189,7 @@ export function applyRowsToTags(currentTags, approvedRows) {
     };
 
     for (const tag of currentTags) {
+        if (removed.has(tag.toLowerCase())) { changed = true; continue; } // junk — drop it
         const canonical = variantToCanonical.get(tag.toLowerCase());
         if (canonical === undefined) {
             push(tag);

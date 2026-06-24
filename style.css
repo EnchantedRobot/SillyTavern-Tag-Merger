@@ -6,10 +6,15 @@
     margin: 0 0 10px 0;
 }
 
-.ctm-threshold-row { margin: 0 0 12px 0; }
-.ctm-threshold-label { font-size: 12px; display: block; margin-bottom: 4px; }
-.ctm-threshold-range { width: 100%; cursor: pointer; }
-.ctm-threshold-hint { font-size: 11px; opacity: 0.6; margin-top: 3px; }
+.ctm-reset-link {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-top: 8px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: underline;
+}
+.ctm-reset-link:hover { opacity: 0.9; }
 
 /* ── Modal overlay ─────────────────────────────────────────────── */
 .ctm-overlay {
@@ -63,7 +68,6 @@
 
 /* ── Summary ───────────────────────────────────────────────────── */
 .ctm-summary { font-size: 13px; margin-bottom: 12px; }
-.ctm-fuzzy-note { display: block; margin-top: 4px; color: #e0a23c; font-size: 12px; }
 .ctm-bulk { margin-top: 8px; font-size: 12px; }
 .ctm-link { cursor: pointer; color: var(--SmartThemeQuoteColor, #4a9eff); }
 .ctm-link:hover { text-decoration: underline; }
@@ -101,17 +105,6 @@
 }
 .ctm-row-dismiss:hover { opacity: 1; color: #e57373; background: rgba(229, 115, 115, 0.12); }
 
-.ctm-row-fuzzy { background: rgba(224, 162, 60, 0.08); }
-.ctm-fuzzy-badge {
-    margin-left: 6px;
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #e0a23c;
-    border: 1px solid #e0a23c;
-    border-radius: 3px;
-    padding: 0 4px;
-}
-
 .ctm-canonical { width: 100%; min-width: 120px; }
 
 .ctm-variants { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -124,7 +117,6 @@
     padding: 2px 6px;
     font-size: 12px;
 }
-.ctm-chip-canonical { outline: 1px solid var(--SmartThemeQuoteColor, #4a9eff); }
 .ctm-chip-count { opacity: 0.6; font-size: 10px; }
 .ctm-chip-label { cursor: pointer; }
 .ctm-chip-label:hover { text-decoration: underline; }
@@ -288,12 +280,11 @@
     overflow-y: auto;
     padding: 2px;
 }
-.ctm-chip-delete-queued {
+.ctm-chip-removed {
     background: rgba(229, 115, 115, 0.15);
     outline: 1px solid rgba(229, 115, 115, 0.5);
 }
-.ctm-chip-delete-queued .ctm-chip-x { color: #e57373; opacity: 0.7; }
-.ctm-chip-delete-queued .ctm-chip-x:hover { opacity: 1; }
+.ctm-bucket-removed .ctm-excluded-header { color: #e57373; }
 
 /* ── Progress ──────────────────────────────────────────────────── */
 .ctm-progress { margin-top: 14px; }
