@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """
-Assign every source tag from card-tags.json to exactly one canonical tag
-(from canonical-tags.json), or to junk (removedTags), or to a holiday.
+Emit base-mapping-v2.json: the definitive, corpus-independent dictionary built
+purely from the declared classification below (canonical-tags.json + the alias
+table). Everything declared ships, whether or not any card uses it.
 
 Rules:
-- A source tag collapses into exactly ONE canonical (alias match wins).
+- Each declared variant maps to exactly ONE canonical (one alias() call per
+  canonical). Holidays are ordinary canonicals with explicit aliases.
 - Junk classes (events, dates, handles, meta, body/appearance, invented worlds,
-  POV, jokes, transient moods) are dropped to removedTags.
-- Holiday-dated tags (christmas2024, valentine2025...) map to the Holiday category.
+  POV, jokes, transient moods) go to removedTags.
 - The coarse "Fetish" bucket absorbs the long tail of niche kinks.
 
-There is one alias() call per canonical. Output: base-mapping-v2.json
+A corpus (card-tags.json) is optional and used ONLY to discover tags not yet
+classified; those are written to the gitignored unmapped-report.json and never
+affect base-mapping-v2.json.
 """
 import json, re, sys
 from collections import defaultdict
@@ -332,15 +335,17 @@ alias('Gambling', 'casino', 'debt', 'high stakes', 'poker')
 # Holiday
 alias('Christmas', '2025christmas', 'christmas2024', 'xmas')
 alias('Halloween', 'halloween2024', 'spooktober')
-alias('Valentine\'s Day', 'thevalentine', 'valentine2025', 'valentines day', 'valentinesday')
+alias('Valentine\'s Day', 'thevalentine', 'valentine', 'valentine2025', 'valentines',
+      'valentines day', 'valentinesday')
+alias('Easter', 'easter bunny', 'easter egg', 'easter eggs', 'easterbunny', 'easteregg', 'eastereggs')
 alias('Birthday', 'bday')
 
 # Content Rating
 alias('SFW', 'safe for work')
 alias('NSFW', 'anal', 'blowjob', 'blowjobs', 'casual sex', 'caught', 'caught masturbating', 'dirty',
       'erotic', 'erotica', 'exploration of sexuality', 'first time', 'freakinthesheets', 'horny',
-      'hornybum', 'kinky', 'lewd content', 'lust', 'masturbation', 'moaning', 'oral', 'porn',
-      'porn studio', 'pornography', 'sex', 'sex positive', 'sex with strangers', 'sexual tension',
+      'hornybum', 'kinky', 'lewd content', 'lust', 'masturbation', 'moaning', 'oral', 'sex', 'sex positive',
+      'sex with strangers', 'sexual tension',
       'smut', 'smut 🔥❤', 'smutbait', 'smutifuserwants', 'temptation', 'xrated21orabove')
 alias('Can Be Wholesome, Can Be Sexy', 'can be sexy', 'can be wholesome', 'can be wholesome can be sexy',
       'canbesmutflufforangst', 'sfw &lt;-&gt; nsfw', 'sfw <-> nsfw')
@@ -376,7 +381,8 @@ alias('Non-Con', 'assault', 'extremenoncon', 'made for rape', 'noncon', 'noncon/
       'sexual harassment', 'sexual predator')
 alias('Dubcon', 'cnc', 'cncpossible', 'coercion', 'coersion', 'dub-con')
 alias('Sex Work', 'brothel', 'concubine', 'hooker', 'pimp', 'prostitute', 'prostitution',
-      'sex industry', 'sex worker', 'sexworker', 'street hooker', 'whore')
+      'sex industry', 'sex worker', 'sexworker', 'street hooker', 'whore',
+      'porn', 'porn studio', 'pornography', )
 alias('Slavery', 'hostage', 'indentured', 'owner', 'ownership', 'servant', 'sex slave', 'sex slavery',
       'slave', 'slave girl', 'slavechar', 'slaveuser', 'trafficked', 'master-servant')
 alias('Cuckold', 'cuck', 'cuckolding', 'cuckquean', 'hotwife')
@@ -642,13 +648,6 @@ MOOD_JUNK = set(map(norm, [
     'melancholic', 'nihilistic', 'reluctant', 'sad',
 ]))
 
-HOLIDAY_PAT = [
-    (re.compile(r'christmas'), 'Christmas'),
-    (re.compile(r'halloween'), 'Halloween'),
-    (re.compile(r'valentine'), "Valentine's Day"),
-    (re.compile(r'easter'), 'Easter'),
-]
-
 # ---- build the definitive dictionary (corpus-independent) ------------------
 # Ground truth IS the declared classification: every alias() entry grouped under
 # its canonical (each canonical also carries its own normalized form via the
@@ -695,8 +694,6 @@ if src is not None:
             return 'mapped'
         if n in removed:
             return 'removed'
-        if any(p.search(n) for p, _ in HOLIDAY_PAT):
-            return 'mapped'
         return 'unmapped'
 
     coverage = defaultdict(set)

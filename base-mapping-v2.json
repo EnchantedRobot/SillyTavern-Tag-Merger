@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-24T02:27:20+00:00",
+  "generatedAt": "2026-06-24T02:36:36+00:00",
   "canonicalCategories": {
     "Genre": [
       "Romance",
@@ -1088,7 +1088,13 @@
       "dystopian"
     ],
     "Easter": [
-      "easter"
+      "easter",
+      "easter bunny",
+      "easter egg",
+      "easter eggs",
+      "easterbunny",
+      "easteregg",
+      "eastereggs"
     ],
     "Elemental": [
       "elemental",
@@ -1988,9 +1994,6 @@
       "moaning",
       "nsfw",
       "oral",
-      "porn",
-      "porn studio",
-      "pornography",
       "sex",
       "sex positive",
       "sex with strangers",
@@ -2554,6 +2557,9 @@
       "concubine",
       "hooker",
       "pimp",
+      "porn",
+      "porn studio",
+      "pornography",
       "prostitute",
       "prostitution",
       "sex industry",
@@ -3021,8 +3027,10 @@
     ],
     "Valentine's Day": [
       "thevalentine",
+      "valentine",
       "valentine's day",
       "valentine2025",
+      "valentines",
       "valentines day",
       "valentinesday"
     ],
