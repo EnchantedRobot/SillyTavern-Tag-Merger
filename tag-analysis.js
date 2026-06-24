@@ -5,14 +5,14 @@
 // The live extension is mapping-driven: a persistent `{ canonical: [variant…] }`
 // dictionary is the source of truth. This module turns the cards + that mapping
 // into display buckets and applies the mapping to a card's tag list. The base
-// dictionary is generated offline by scripts/build-mapping.py.
+// dictionary lives in tag-dictionary.json (category → canonical → aliases)
+// and is flattened to { canonical: [alias…] } on load.
 
 /**
- * Normalize a tag to its match key. Mirrors scripts/build-mapping.py `norm()`
- * exactly: trim, strip leading '#', trim again, collapse internal whitespace,
- * lowercase. The shipped dictionary stores variants in this normalized form, so
- * matching must normalize incoming tags the same way (this is what lets messy
- * "#Female", "  female ", "FEMALE" all resolve to the same entry).
+ * Normalize a tag to its match key: trim, strip leading '#', trim again,
+ * collapse internal whitespace, lowercase. Applied to both the dictionary aliases
+ * on load and to card tags at match time (so "#Female", "  female ", "FEMALE"
+ * all resolve to the same entry).
  * @param {string} t
  * @returns {string}
  */

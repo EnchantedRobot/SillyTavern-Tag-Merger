@@ -39,7 +39,7 @@ export function saveDictionary(mapping, removedTags) {
     SillyTavern.getContext().saveSettingsDebounced?.();
 }
 
-const BASE_FILE = 'base-mapping-v2.json';
+const BASE_FILE = 'tag-dictionary.json';
 
 /** Fetch the shipped base dictionary (used to seed empty settings). */
 export async function loadBaseDictionary() {
@@ -47,9 +47,20 @@ export async function loadBaseDictionary() {
         const res = await fetch(new URL(`./${BASE_FILE}`, import.meta.url));
         if (!res.ok) return null;
         const json = await res.json();
+        const flat = {};
+        const canonicalCategories = {};
+        const categoryOrder = Object.keys(json?.mapping ?? {});
+        for (const [cat, canonicals] of Object.entries(json?.mapping ?? {})) {
+            for (const [canonical, aliases] of Object.entries(canonicals)) {
+                flat[canonical] = Array.isArray(aliases) ? aliases : [];
+                canonicalCategories[canonical] = cat;
+            }
+        }
         return {
-            mapping: (json && typeof json.mapping === 'object' && json.mapping) || {},
+            mapping: flat,
             removedTags: Array.isArray(json?.removedTags) ? json.removedTags : [],
+            canonicalCategories,
+            categoryOrder,
         };
     } catch (e) {
         console.error(`[Tag Merger] failed to load ${BASE_FILE}`, e);
@@ -59,19 +70,26 @@ export async function loadBaseDictionary() {
 
 /**
  * Return the user's dictionary, seeding it from the shipped base the first time
- * the extension is used.
+ * the extension is used. Always loads category metadata from the base file.
  */
 async function ensureDictionary() {
     const s = getExtSettings();
+    const base = await loadBaseDictionary();
     if (Object.keys(s.mapping).length === 0 && s.removedTags.length === 0) {
-        const base = await loadBaseDictionary();
         if (base) {
             s.mapping = base.mapping;
             s.removedTags = base.removedTags;
             SillyTavern.getContext().saveSettingsDebounced?.();
         }
     }
-    return { mapping: s.mapping, removedTags: s.removedTags };
+    return {
+        mapping: s.mapping,
+        removedTags: s.removedTags,
+        canonicalCategories: base?.canonicalCategories ?? {},
+        categoryOrder: base?.categoryOrder ?? [],
+        baseMapping: base?.mapping ?? {},
+        baseRemovedTags: base?.removedTags ?? [],
+    };
 }
 
 function buildPanel() {
@@ -88,19 +106,9 @@ function buildPanel() {
                 <div id="ctm-open" class="menu_button" style="width:100%; text-align:center;">
                     <i class="fa-solid fa-tags"></i>&nbsp;&nbsp;Edit Tag Mapping
                 </div>
-                <div id="ctm-reset" class="ctm-reset-link" title="Discard your edits and reload the shipped base dictionary">Reset mapping to the shipped default</div>
             </div>
         </div>
     `;
-    div.querySelector('#ctm-reset').addEventListener('click', async () => {
-        const base = await loadBaseDictionary();
-        if (!base || Object.keys(base.mapping).length === 0) {
-            toastr.error('Could not load the base dictionary.', 'Tag Merger');
-            return;
-        }
-        saveDictionary(base.mapping, base.removedTags);
-        toastr.success('Mapping reset to the shipped default.', 'Tag Merger');
-    });
     return div;
 }
 
@@ -112,8 +120,8 @@ async function openTagMerger() {
             toastr.info('No characters loaded.', 'Tag Merger');
             return;
         }
-        const { mapping, removedTags } = await ensureDictionary();
-        openModal(characters, mapping, removedTags);
+        const { mapping, removedTags, canonicalCategories, categoryOrder, baseMapping, baseRemovedTags } = await ensureDictionary();
+        openModal(characters, mapping, removedTags, canonicalCategories, categoryOrder, baseMapping, baseRemovedTags);
     } catch (e) {
         console.error('[Tag Merger]', e);
         toastr.error('Failed to open Tag Merger. See console.', 'Tag Merger');

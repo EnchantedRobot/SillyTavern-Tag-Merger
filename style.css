@@ -6,15 +6,20 @@
     margin: 0 0 10px 0;
 }
 
-.ctm-reset-link {
-    font-size: 11px;
-    opacity: 0.6;
-    margin-top: 8px;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: underline;
+
+.menu_button.ctm-btn-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+    cursor: default;
 }
-.ctm-reset-link:hover { opacity: 0.9; }
+
+.menu_button.ctm-btn-cancel {
+    color: #e57373;
+    border-color: rgba(229, 115, 115, 0.4);
+}
+.menu_button.ctm-btn-cancel:hover {
+    background: rgba(229, 115, 115, 0.15);
+}
 
 /* ── Modal overlay ─────────────────────────────────────────────── */
 .ctm-overlay {
@@ -104,6 +109,7 @@
     border-radius: 3px;
 }
 .ctm-row-dismiss:hover { opacity: 1; color: #e57373; background: rgba(229, 115, 115, 0.12); }
+.ctm-row--muted { opacity: 0.35; }
 
 .ctm-canonical { width: 100%; min-width: 120px; }
 
@@ -130,8 +136,47 @@
 .ctm-chip-x:hover { opacity: 1; color: #e57373; }
 
 .ctm-hint { opacity: 0.6; font-size: 11px; }
-.ctm-sort-controls { margin-left: 10px; }
-.ctm-sort-active { font-weight: 700; text-decoration: underline; cursor: default; }
+
+/* ── Category accordions ───────────────────────────────────────── */
+.ctm-categories { display: flex; flex-direction: column; gap: 8px; }
+
+.ctm-category {
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ctm-category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    list-style: none;
+    user-select: none;
+}
+.ctm-category-header::-webkit-details-marker { display: none; }
+.ctm-category-header::before {
+    content: '▸';
+    font-size: 10px;
+    opacity: 0.5;
+    transition: transform 0.15s;
+    flex-shrink: 0;
+}
+details[open] > .ctm-category-header::before { transform: rotate(90deg); }
+
+.ctm-category-name { flex: 1; }
+.ctm-category-count { font-size: 11px; opacity: 0.45; font-weight: normal; }
+.ctm-category--clean .ctm-category-name { color: #81c784; }
+
+.ctm-category .ctm-table-wrap {
+    border: none;
+    border-radius: 0;
+    border-top: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.07));
+}
 
 /* ── Chip move menu ────────────────────────────────────────────── */
 .ctm-chip-menu {

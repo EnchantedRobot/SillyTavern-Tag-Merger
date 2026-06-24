@@ -20,7 +20,12 @@ let state = null;       // { groups, unassigned, removed }
 let overlayEl = null;
 let characterList = [];
 let groupSeq = 0;
-let groupSort = 'cardCount'; // 'cardCount' | 'alpha'
+let canonicalCategories = {};   // canonical → category name
+let categoryOrder = [];         // category names in dictionary order
+let baseSnapshot = null;        // serialized base dict for dirty-check
+let resetBtnEl = null;
+let cancelRequested = false;
+let isRunning = false;
 
 // Per-bucket filter text and a single shared selection (one bucket at a time).
 let bucketFilter = { unassigned: '', removed: '' };
@@ -44,6 +49,30 @@ function closeModal() {
     overlayEl?.remove();
     overlayEl = null;
     state = null;
+    resetBtnEl = null;
+    isRunning = false;
+    cancelRequested = false;
+}
+
+function dictSnapshot(mapping, removedTags) {
+    const m = {};
+    for (const k of Object.keys(mapping).sort()) m[k] = [...mapping[k]].sort();
+    return JSON.stringify({ m, r: [...removedTags].sort() });
+}
+
+function currentSnapshot() {
+    const mapping = {};
+    for (const g of state.groups) {
+        if (!g.canonical) continue;
+        mapping[g.canonical] = g.variants.map(v => v.tag);
+    }
+    return dictSnapshot(mapping, state.removed.map(v => v.tag));
+}
+
+function updateResetBtn() {
+    if (!resetBtnEl) return;
+    const dirty = baseSnapshot && currentSnapshot() !== baseSnapshot;
+    resetBtnEl.classList.toggle('ctm-btn-disabled', !dirty);
 }
 
 /** Union of card avatars across a group's variants. */
@@ -66,13 +95,47 @@ function persist() {
         mapping[g.canonical] = g.variants.map(v => v.tag);
     }
     saveDictionary(mapping, state.removed.map(v => v.tag));
+    updateResetBtn();
+}
+
+/** Recompute counts/avatars on every variant in state from the current characterList. */
+function recomputeCounts() {
+    const freq = new Map();
+    for (const char of characterList ?? []) {
+        const avatar = char?.avatar ?? '';
+        const seen = new Set();
+        for (const tag of getCardTags(char)) {
+            const lower = tag.toLowerCase();
+            if (seen.has(lower)) continue;
+            seen.add(lower);
+            let e = freq.get(tag);
+            if (!e) { e = { count: 0, avatars: [] }; freq.set(tag, e); }
+            e.count++;
+            if (avatar) e.avatars.push(avatar);
+        }
+    }
+    const allVariants = [
+        ...state.groups.flatMap(g => g.variants),
+        ...state.unassigned,
+        ...state.removed,
+    ];
+    for (const v of allVariants) {
+        const e = freq.get(v.tag);
+        v.count = e ? e.count : 0;
+        v.avatars = e ? e.avatars : [];
+    }
 }
 
 /** (Re)build the modal's three buckets from a dictionary into `state`. */
 function loadState(mapping, removedTags) {
     const { groups, unassigned, removed } = buildBuckets(characterList, mapping, removedTags);
     state = {
-        groups: groups.map(g => ({ id: `g${groupSeq++}`, canonical: g.canonical, variants: g.variants })),
+        groups: groups.map(g => ({
+            id: `g${groupSeq++}`,
+            canonical: g.canonical,
+            variants: g.variants,
+            category: canonicalCategories[g.canonical] ?? '',
+        })),
         unassigned,
         removed,
     };
@@ -84,15 +147,18 @@ function loadState(mapping, removedTags) {
  * @param {Object<string,string[]>} mapping  persistent canonical -> variants dict
  * @param {string[]} [removedTags]  persistent junk list
  */
-export function openModal(characters, mapping, removedTags) {
+export function openModal(characters, mapping, removedTags, catCategories = {}, catOrder = [], baseMapping = {}, baseRemovedTags = []) {
     closeModal();
     characterList = characters;
     groupSeq = 0;
-    groupSort = 'cardCount';
+    canonicalCategories = catCategories;
+    categoryOrder = catOrder;
     bucketFilter = { unassigned: '', removed: '' };
     selectionBucket = null;
     selected = new Set();
 
+    loadState(baseMapping, baseRemovedTags);
+    baseSnapshot = currentSnapshot();
     loadState(mapping, removedTags);
 
     overlayEl = el(`
@@ -123,6 +189,8 @@ export function openModal(characters, mapping, removedTags) {
     const resetBtn = el(`<div class="menu_button" title="Discard your edits and restore the shipped default mapping"><i class="fa-solid fa-rotate-left"></i>&nbsp;&nbsp;Reset Tags</div>`);
     resetBtn.addEventListener('click', onResetTags);
     footer.appendChild(resetBtn);
+    resetBtnEl = resetBtn;
+    updateResetBtn();
     const closeBtn = el(`<div class="menu_button"><i class="fa-solid fa-xmark"></i>&nbsp;&nbsp;Close</div>`);
     closeBtn.addEventListener('click', closeModal);
     footer.appendChild(closeBtn);
@@ -152,59 +220,87 @@ function renderBody() {
 }
 
 function buildSummary() {
-    const node = el(`
+    return el(`
         <div class="ctm-summary">
             <b>${state.groups.length}</b> canonical tag${state.groups.length === 1 ? '' : 's'}, <b>${state.unassigned.length}</b> unassigned, <b>${state.removed.length}</b> removed.
             <div class="ctm-bulk">
                 <span class="ctm-hint">Click a tag to move it between canonicals, Unassigned, or Removed. ✕ on a variant sends it back to Unassigned. Edits save automatically.</span>
-                <span class="ctm-sort-controls">
-                    Sort:
-                    <span class="ctm-link ctm-sort${groupSort === 'cardCount' ? ' ctm-sort-active' : ''}" data-sort="cardCount">By cards</span> ·
-                    <span class="ctm-link ctm-sort${groupSort === 'alpha' ? ' ctm-sort-active' : ''}" data-sort="alpha">A–Z</span>
-                </span>
             </div>
         </div>
     `);
-    node.querySelectorAll('.ctm-sort').forEach(btn => {
-        btn.addEventListener('click', () => { syncFromDom(); groupSort = btn.dataset.sort; renderBody(); });
+}
+
+/** True if this group will actually rename at least one tag on a real card. */
+function groupHasRename(group) {
+    return group.variants.some(v => v.count > 0 && v.tag !== group.canonical);
+}
+
+function buildRow(group) {
+    const tr = el(`
+        <tr class="ctm-row" data-id="${group.id}">
+            <td><input type="text" class="ctm-canonical text_pole" value="${escapeHtml(group.canonical)}"></td>
+            <td class="ctm-variants"></td>
+            <td class="ctm-col-count">${cardCount(group)}</td>
+            <td class="ctm-col-dismiss"><span class="ctm-row-dismiss" title="Delete canonical — send all variants to Unassigned">✕</span></td>
+        </tr>
+    `);
+    const visibleVariants = group.variants.filter(v => v.count > 0);
+    if (!groupHasRename(group)) tr.classList.add('ctm-row--muted');
+    const cell = tr.querySelector('.ctm-variants');
+    for (const v of visibleVariants) cell.appendChild(buildChip(v, group));
+    tr.querySelector('.ctm-canonical').addEventListener('change', (e) => {
+        group.canonical = e.target.value.trim() || group.canonical;
+        e.target.value = group.canonical;
+        persist();
     });
-    return node;
+    tr.querySelector('.ctm-row-dismiss').addEventListener('click', () => {
+        syncFromDom();
+        state.groups = state.groups.filter(g => g !== group);
+        for (const v of group.variants) state.unassigned.push(v);
+        persist();
+        renderBody();
+    });
+    return tr;
 }
 
 function buildTable() {
-    const wrap = el(`<div class="ctm-table-wrap"><table class="ctm-table">
-        <thead><tr><th>Canonical tag</th><th>Merged variants</th><th class="ctm-col-count">Cards</th><th class="ctm-col-dismiss"></th></tr></thead>
-        <tbody></tbody></table></div>`);
-    const tbody = wrap.querySelector('tbody');
+    const wrap = el(`<div class="ctm-categories"></div>`);
 
-    const ordered = [...state.groups].sort(groupSort === 'alpha'
-        ? (a, b) => a.canonical.localeCompare(b.canonical)
-        : (a, b) => cardCount(b) - cardCount(a) || a.canonical.localeCompare(b.canonical));
+    // Group by category, preserving dictionary order; uncategorised at end.
+    const byCat = new Map();
+    for (const group of state.groups) {
+        const cat = group.category || 'Custom';
+        if (!byCat.has(cat)) byCat.set(cat, []);
+        byCat.get(cat).push(group);
+    }
+    const orderedCats = [
+        ...categoryOrder.filter(c => byCat.has(c)),
+        ...[...byCat.keys()].filter(c => !categoryOrder.includes(c)),
+    ];
 
-    for (const group of ordered) {
-        const tr = el(`
-            <tr class="ctm-row" data-id="${group.id}">
-                <td><input type="text" class="ctm-canonical text_pole" value="${escapeHtml(group.canonical)}"></td>
-                <td class="ctm-variants"></td>
-                <td class="ctm-col-count">${cardCount(group)}</td>
-                <td class="ctm-col-dismiss"><span class="ctm-row-dismiss" title="Delete canonical — send all variants to Unassigned">✕</span></td>
-            </tr>
+    for (const cat of orderedCats) {
+        const groups = byCat.get(cat);
+        const hasChanges = groups.some(groupHasRename);
+        const section = el(`
+            <details class="ctm-category${hasChanges ? '' : ' ctm-category--clean'}"${hasChanges ? ' open' : ''}>
+                <summary class="ctm-category-header">
+                    <span class="ctm-category-name">${escapeHtml(cat)}</span>
+                    <span class="ctm-category-count">${groups.length}</span>
+                </summary>
+                <div class="ctm-table-wrap">
+                    <table class="ctm-table">
+                        <thead><tr>
+                            <th>Canonical tag</th><th>Merged variants</th>
+                            <th class="ctm-col-count">Cards</th><th class="ctm-col-dismiss"></th>
+                        </tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </details>
         `);
-        const cell = tr.querySelector('.ctm-variants');
-        for (const v of group.variants) cell.appendChild(buildChip(v, group));
-        tr.querySelector('.ctm-canonical').addEventListener('change', (e) => {
-            group.canonical = e.target.value.trim() || group.canonical;
-            e.target.value = group.canonical;
-            persist();
-        });
-        tr.querySelector('.ctm-row-dismiss').addEventListener('click', () => {
-            syncFromDom();
-            state.groups = state.groups.filter(g => g !== group);
-            for (const v of group.variants) state.unassigned.push(v);
-            persist();
-            renderBody();
-        });
-        tbody.appendChild(tr);
+        const tbody = section.querySelector('tbody');
+        for (const group of groups) tbody.appendChild(buildRow(group));
+        wrap.appendChild(section);
     }
     return wrap;
 }
@@ -257,12 +353,13 @@ function refreshBucket(kind) {
 function buildBucket(kind) {
     const meta = BUCKET_META[kind];
     const arr = bucketArr(kind);
+    const visible = kind === 'removed' ? arr.filter(v => v.count > 0) : arr;
     const wrap = el(`<div class="ctm-excluded ${meta.cls}"></div>`);
     const inSelection = selectionBucket === kind;
 
     const headerRow = el(`<div class="ctm-excluded-header-row">
-        <span class="ctm-excluded-header">${meta.header(arr.length)}</span>
-        ${arr.length > 0 ? `<span class="ctm-link ctm-excluded-toggle">${inSelection ? 'Cancel' : 'Select'}</span>` : ''}
+        <span class="ctm-excluded-header">${meta.header(visible.length)}</span>
+        ${visible.length > 0 ? `<span class="ctm-link ctm-excluded-toggle">${inSelection ? 'Cancel' : 'Select'}</span>` : ''}
     </div>`);
     headerRow.querySelector('.ctm-excluded-toggle')?.addEventListener('click', () => {
         selectionBucket = inSelection ? null : kind;
@@ -271,18 +368,19 @@ function buildBucket(kind) {
     });
     wrap.appendChild(headerRow);
 
-    if (arr.length === 0) {
+    if (visible.length === 0) {
         wrap.appendChild(el(`<div class="ctm-excluded-empty">${meta.empty}</div>`));
         return wrap;
     }
 
     if (inSelection && selected.size > 0) wrap.appendChild(buildBulkActionBar(kind));
 
-    const filter = el(`<input type="text" class="ctm-excluded-filter text_pole" placeholder="Filter ${arr.length} tags…" value="${escapeHtml(bucketFilter[kind])}">`);
+    const filter = el(`<input type="text" class="ctm-excluded-filter text_pole" placeholder="Filter ${visible.length} tags…" value="${escapeHtml(bucketFilter[kind])}">`);
     wrap.appendChild(filter);
-
-    const sorted = [...arr].sort((a, b) =>
-        a.tag.toLowerCase().replace(/^#+/, '').localeCompare(b.tag.toLowerCase().replace(/^#+/, '')));
+    const sorted = [...visible].sort((a, b) =>
+        kind === 'removed'
+            ? b.count - a.count
+            : a.tag.toLowerCase().replace(/^#+/, '').localeCompare(b.tag.toLowerCase().replace(/^#+/, '')));
     const strip = el(`<div class="ctm-excluded-strip"></div>`);
     for (const v of sorted) {
         const chip = buildBucketChip(kind, v);
@@ -521,7 +619,7 @@ function buildProgress() {
 }
 
 function setRunning(running) {
-    overlayEl.querySelectorAll('.menu_button, .ctm-canonical, .ctm-link, .ctm-chip').forEach(elm => {
+    overlayEl.querySelectorAll('.menu_button:not(#ctm-apply), .ctm-canonical, .ctm-link, .ctm-chip').forEach(elm => {
         elm.style.pointerEvents = running ? 'none' : '';
         elm.style.opacity = running ? '0.5' : '';
     });
@@ -545,7 +643,9 @@ function collectApprovedRows() {
 }
 
 async function onApply() {
+    if (isRunning) return;
     closeChipMenu();
+    cancelRequested = false;
     const approved = collectApprovedRows();
     const removedSet = new Set(state.removed.map(v => norm(v.tag)));
 
@@ -574,17 +674,37 @@ async function onApply() {
     if (!confirmed) return;
 
     setRunning(true);
-    overlayEl.querySelector('#ctm-progress').style.display = 'block';
 
+    // Transform Apply → Cancel while processing.
+    const applyBtn = overlayEl.querySelector('#ctm-apply');
+    applyBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>&nbsp;&nbsp;Cancel';
+    applyBtn.classList.add('ctm-btn-cancel');
+    const onCancel = () => { cancelRequested = true; };
+    applyBtn.addEventListener('click', onCancel);
+
+    const progressEl = overlayEl.querySelector('#ctm-progress');
+    progressEl.style.display = 'block';
+    progressEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    isRunning = true;
     let done = 0, ok = 0;
     const errors = [];
     for (const change of changeSet) {
         const res = await writeCardTags(change.avatar, change.newTags);
         if (res.ok) ok++; else errors.push(`${change.name || change.avatar}: ${res.error}`);
         updateProgress(++done, changeSet.length);
+        if (cancelRequested) break;
     }
+    isRunning = false;
 
-    if (errors.length === 0) {
+    // Restore Apply button.
+    applyBtn.removeEventListener('click', onCancel);
+    applyBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>&nbsp;&nbsp;Apply to Cards';
+    applyBtn.classList.remove('ctm-btn-cancel');
+
+    if (cancelRequested) {
+        toastr.info(`Cancelled — updated ${ok} card${ok === 1 ? '' : 's'}.`, 'Tag Merger');
+    } else if (errors.length === 0) {
         toastr.success(`Updated tags on ${ok} card${ok === 1 ? '' : 's'}.`, 'Tag Merger');
     } else {
         console.error(MODULE, 'errors:', errors);
@@ -595,11 +715,14 @@ async function onApply() {
         const ctx = SillyTavern.getContext();
         await ctx.getCharacters?.();
         ctx.printCharactersDebounced?.();
+        if (ctx.characters?.length) characterList = ctx.characters;
     } catch (e) {
         console.warn(MODULE, 'refresh failed', e);
     }
 
-    closeModal();
+    recomputeCounts();
+    setRunning(false);
+    renderBody();
 }
 
 /** In-modal confirmation overlay (self-contained, no popup.js dependency). */
@@ -658,5 +781,6 @@ async function onResetTags() {
     selected.clear();
     bucketFilter = { unassigned: '', removed: '' };
     renderBody();
+    updateResetBtn();
     toastr.success('Mapping reset to the shipped default.', 'Tag Merger');
 }
