@@ -9,7 +9,7 @@
 // "Apply" rewrites every card: each variant becomes its canonical, each removed
 // tag is deleted.
 
-import { buildBuckets, applyRowsToTags, getCardTags, pickCanonical } from './tag-analysis.js';
+import { buildBuckets, applyRowsToTags, getCardTags, pickCanonical, norm } from './tag-analysis.js';
 import { writeCardTags } from './card-writer.js';
 import { saveDictionary, loadBaseDictionary } from './index.js';
 
@@ -547,7 +547,7 @@ function collectApprovedRows() {
 async function onApply() {
     closeChipMenu();
     const approved = collectApprovedRows();
-    const removedSet = new Set(state.removed.map(v => v.tag.toLowerCase()));
+    const removedSet = new Set(state.removed.map(v => norm(v.tag)));
 
     if (approved.length === 0 && removedSet.size === 0) {
         toastr.info('Nothing to apply — no renames or removals defined.', 'Tag Merger');

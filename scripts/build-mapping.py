@@ -22,24 +22,26 @@ def norm(t):
     t = re.sub(r'\s+', ' ', t)
     return t.lower()
 
-# ---- load source universe -------------------------------------------------
-# The tag universe comes from the extracted card-tags.json (scripts/extract-tags.py
-# output). Collect every tag referenced into one universe.
+# ---- optional corpus (discovery only) -------------------------------------
+# A corpus (card-tags.json from scripts/extract-tags.py) is NOT required to build
+# the dictionary — the dictionary is the declared classification further down.
+# When a corpus is present it is used purely to DISCOVER tags we haven't
+# classified yet; that result is written to a separate, gitignored report and
+# never changes base-mapping-v2.json. Corpora come and go; ground truth doesn't.
 from pathlib import Path
+from datetime import datetime, timezone
 src_path = f'{ROOT}/card-tags.json'
-if not Path(src_path).exists():
-    sys.exit(f'missing {src_path} — run scripts/extract-tags.py first')
-src = json.load(open(src_path))
-universe = set()
-for k, v in src.get('mapping', {}).items():
-    universe.add(k)
-    universe.update(v)
-universe.update(src.get('allTags', []))
-universe.update(src.get('removedTags', []))
-
+src = json.load(open(src_path)) if Path(src_path).exists() else None
 norm_to_orig = defaultdict(set)
-for t in universe:
-    norm_to_orig[norm(t)].add(t)
+if src is not None:
+    universe = set()
+    for k, v in src.get('mapping', {}).items():
+        universe.add(k)
+        universe.update(v)
+    universe.update(src.get('allTags', []))
+    universe.update(src.get('removedTags', []))
+    for t in universe:
+        norm_to_orig[norm(t)].add(t)
 
 canon = json.load(open(f'{ROOT}/canonical-tags.json'))
 CANON_BY_CAT = canon['categories']
@@ -57,7 +59,7 @@ def alias(canonical, *variants):
 alias('Romance', 'confession', 'contemporary romance', 'cupid', 'dark romance', 'dramaandromance', 'drunk confession',
       'falling in love', 'feelings realization', 'first love', 'genuine', 'intimate', 'love',
       'love is a battlefield', 'loveatfirstfright', 'loveconquersall', 'lover', 'morning after',
-      'passionate', 'practice kissing', 'rom', 'romantic', 'soulmate', 'true love',
+      'passionate', 'possibleromance', 'practice kissing', 'rom', 'romantic', 'soulmate', 'true love',
       'unconditional love', 'virgin emotions', 'yearning')
 alias('Comedy', 'comedic', 'dark comedy', 'funny', 'humor', 'humorous', 'satire', 'silly')
 alias('Romantic Comedy', 'romanticcomedy', 'romcom')
@@ -76,7 +78,7 @@ alias('Thriller', 'suspense', 'thrillerandmystery')
 alias('Mystery', 'mysteries', 'noir')
 alias('Adventure', 'exploration', 'journey', 'rescue mission', 'survival')
 alias('Action', 'battle', 'chase', 'combat', 'fight', 'fighting', 'guns', 'violence', 'violent', 'war')
-alias('Isekai', 'alternate universe', 'gate', 'portal fantasy', 'reverse isekai', 'reverseisekai')
+alias('Isekai', 'alternate universe', 'gate', 'parallel universe', 'portal fantasy', 'reverse isekai', 'reverseisekai')
 alias('Crime', 'criminal underworld', 'murder')
 alias('Coming of Age', 'coming-of-age')
 alias('Tragedy', 'death', 'dieing', 'tradegy', 'tragic')
@@ -86,7 +88,7 @@ alias('Supernatural', 'curse', 'cursed', 'occult', 'paranormal', 'supernatural t
 
 # Tone / Mood
 alias('Wholesome', 'comfort', 'comfy', 'cozy', 'cuddles', 'healing', 'heartwarming', 'surprisingly wholesome')
-alias('Fluff', 'domestic intimacy', 'fluffweek', 'fluffy', 'gift giving')
+alias('Fluff', 'domestic intimacy', 'fluffweek', 'fluffy', 'gift giving', 'possiblefluff')
 alias('Angst', 'breaking', 'emotional damage', 'emotional erosion', 'heavyangst', 'heavyangstdrama')
 alias('Hurt/Comfort', 'comfortsex', 'emotional vulnerability', 'hurt-comfort', 'hurtcomfort',
       'traumacomfort', 'vulnerability')
@@ -97,7 +99,7 @@ alias('Story Driven', 'character depth', 'lore friendly', 'plot', 'plotheavy', '
 # Setting / Era
 alias('Modern Day', 'city', 'modern', 'modernday', 'present', 'real world', 'real-world', 'realism',
       'realistic')
-alias('Historical', 'coldwarera', 'colonization', 'historical/ancient', 'history', 'regency era',
+alias('Historical', '1870s', '1950s', 'coldwarera', 'colonization', 'historical/ancient', 'history', 'regency era',
       'renaissance', 'retro', 'victorian')
 alias('Ancient', 'ancientgreece', 'rome', 'sparta')
 alias('Post-Apocalyptic', 'apocalypse', 'post apocalyptic', 'post-apocalypse', 'postapocalpytic',
@@ -150,7 +152,7 @@ alias('Dragon', 'dragon girl', 'dragonborn', 'dragongirl')
 alias('Ghost', 'ghost girl', 'haunted', 'incorporeal', 'possession', 'spirit possession')
 alias('Slime Girl', 'slime', 'slimegirl')
 alias('Lamia', 'gorgon')
-alias('Furry', 'anthro', 'anthro days', 'anthropomorphic animals')
+alias('Furry', 'anthro', 'anthro days', 'anthro days,', 'anthropomorphic animals')
 alias('Undead', 'necromancer', 'zombie', 'zombie girl')
 alias('Fairy', 'dryad', 'faerie', 'nymph', 'pixie', 'sprite')
 alias('Spirit', 'celestial', 'folklore entity', 'shinigami')
@@ -172,15 +174,15 @@ alias('Indian', 'bollywood')
 alias('Middle Eastern', 'arabian', 'egyptian')
 alias('Native American', 'aztec', 'indigenous', 'mesoamerican', 'native', 'tribal')
 alias('Slavic', 'gopnik', 'russian')
-alias('European', 'british', 'english', 'europe', 'french', 'irish', 'italian', 'scottish', 'swedish')
+alias('European', 'british', 'english', 'europe', 'france', 'french', 'irish', 'italian', 'scottish', 'swedish')
 alias('Romani', 'gypsy', 'gypsies', 'roma')
 
 # Personality / Archetype
 alias('Tsundere', 'tsundere (kind of)', 'tsunderetoyandere', 'yanderetsunderehybrid')
 alias('Yandere', 'slight yandere', 'soft yandere')
 alias('Brat', 'brat taming', 'bratt', 'brattaming', 'bratty', 'himedere', 'spoiled brat')
-alias('Shy', 'awkward', 'introvert', 'nervous', 'quiet', 'repressed', 'reserved', 'timid')
-alias('Cold', 'cold anger', 'deadpan', 'emotionless', 'icequeen')
+alias('Shy', 'awkward', 'introvert', 'introverted', 'nervous', 'quiet', 'repressed', 'reserved', 'timid')
+alias('Cold', 'cold anger', 'deadpan', 'emotionless', 'icequeen', 'kakkodere')
 alias('Cheerful', 'bubbly', 'genki', 'perky')
 alias('Energetic', 'adrenaline junkie', 'hyper', 'hyperactive', 'manic')
 alias('Playful', 'mischevious', 'mischievous', 'quirky', 'trickster')
@@ -191,13 +193,13 @@ alias('Jealous', 'jealouswife', 'jealousy', 'jelousy')
 alias('Sarcastic', 'banter', 'deflection', 'sassy', 'smart-assy', 'smartassy', 'smug', 'snarky')
 alias('Kind', 'deredere', 'devoted', 'friendly', 'gentle', 'helpful', 'kindacheating', 'loving', 'soft',
       'sweet')
-alias('Caring', 'affectionate', 'caretaker', 'motherly', 'nurturing')
+alias('Caring', 'affectionate', 'caregiver', 'caretaker', 'motherly', 'nurturing')
 alias('Protective', 'strongbutgentle')
 alias('Insecure', 'crybaby', 'low self esteem', 'low self-esteem', 'self-conscious', 'selfconsciouschar',
       'vulnerable')
 alias('Clingy', 'attachment', 'clingly', 'clingy girl', 'needy', 'needy_clingy', 'needyandclingy')
 alias('Tomboy', 'muscular tomboy', 'tomboyish', 'toned tomboy')
-alias('Nerd', 'bookish', 'bookworm', 'dorky', 'geek', 'hot nerd', 'nerd girl', 'nerd virgin', 'nerdgirl',
+alias('Nerd', 'bookish', 'bookworm', 'dork', 'dorky', 'geek', 'hot nerd', 'nerd girl', 'nerd virgin', 'nerdgirl',
       'nerdy', 'otaku', 'weeaboo', 'weeb')
 alias('Bimbo', 'airhead', 'bakadere', 'bimbo/himbo', 'ditzy', 'dumb', 'dumb bimbo', 'dummy',
       'intelligent bimbo', 'stupid', 'gal', 'Gyaru')
@@ -265,7 +267,7 @@ alias('Royalty', 'nobility', 'noble', 'noblerights', 'noblewoman', 'prince', 'pr
 alias('Nun', 'priestess', 'priestessnun', 'shrine maiden')
 alias('Idol', 'idol manager', 'j-pop', 'jpop', 'kpop', 'kpop idol', 'pop idol', 'popstar',
       'k-pop', 'k-pop idol', 'songaloid', 'virtual idol')
-alias('Streamer', 'content creator', 'livestreamer', 'twitch streamer', 'twitchstreamer', 'vtuber', 'vtuberchar', 'youtuber')
+alias('Streamer', 'content creator', 'livestreamer', 'onlyfans', 'twitch streamer', 'twitchstreamer', 'vtuber', 'vtuberchar', 'youtuber')
 alias('Celebrity', 'celebchar', 'fame', 'famous', 'influencer', 'instagram', 'internet celebrities', 'internet famous',
       'itgirl', 'popular', 'popular girl', 'egirl', 'e-girl')
 alias('Fiancee', 'bride', 'engaged')
@@ -373,7 +375,7 @@ alias('Non-Con', 'assault', 'extremenoncon', 'made for rape', 'noncon', 'noncon/
       'nonconsensual', 'rape', 'rape fantasy', 'rape victim', 'reverse rape', 'sexual assault',
       'sexual harassment', 'sexual predator')
 alias('Dubcon', 'cnc', 'cncpossible', 'coercion', 'coersion', 'dub-con')
-alias('Sex Work', 'brothel', 'concubine', 'hooker', 'onlyfans', 'pimp', 'prostitute', 'prostitution',
+alias('Sex Work', 'brothel', 'concubine', 'hooker', 'pimp', 'prostitute', 'prostitution',
       'sex industry', 'sex worker', 'sexworker', 'street hooker', 'whore')
 alias('Slavery', 'hostage', 'indentured', 'owner', 'ownership', 'servant', 'sex slave', 'sex slavery',
       'slave', 'slave girl', 'slavechar', 'slaveuser', 'trafficked', 'master-servant')
@@ -452,7 +454,7 @@ alias('Model', 'supermodel')
 alias('Bard', 'minstrel')
 alias('Hunter', 'archer', 'huntedchar', 'ranger')
 alias('Adventurer', 'a-rank', 'adventurer guild', 'adventurer party', 'guild', 'guild leader',
-      'guild master', 'guild rpg', 'rookie', 's-rank', 'wolf adventurer')
+      'guild master', 'guild rpg', 'rookie', 's-rank', 'srank', 'wolf adventurer')
 alias('Detective', 'noir detective')
 alias('Hacker', 'cybercrime', 'engineering', 'programmer', 'programming')
 alias('Librarian', 'bookstore')
@@ -545,10 +547,10 @@ JUNK_EXACT = set(map(norm, [
     'glitch', 'khevari', 'lntuniversity', 'losingbff', 'original world',
     'pattern recognition', 'performance vs reality', 'pinkpanther', 'separation', 'special',
     'specific preferences', 'stargate', 'stray', 'support', 'thegoat', 'thin walls', 'train',
-    '1870s', '1950s', '2009', '2025', '500tokenpower', 'abandoned demihumans botjam [the orchard]',
+    '2009', '2025', '500tokenpower', 'abandoned demihumans botjam [the orchard]',
     'accent', 'accident', 'adolion', 'adorable', 'adorkable', 'aegis city heroes', 'aetherlink', 'ai',
     'alichat', 'ambitious', 'amogus', 'among us', 'amymatzumi', 'animals', 'animation',
-    'anime', 'anthro days,', 'any', 'any pov', 'any_pov', 'anypov',
+    'anime', 'any', 'any pov', 'any_pov', 'anypov',
     'apartment', 'app', 'aremm', 'arlo', 'art', 'asha', 'assassinpov',
     'asylum', 'athletic girl', 'athletic women', 'autistic as fuck bruh', 'baby', 'badassy',
     'baddecisions', 'badpersonpov', 'bbgenrejam', 'bbw', 'beautiful',
@@ -557,7 +559,7 @@ JUNK_EXACT = set(map(norm, [
     'blackrose', 'bleached', 'blonde', 'blonde hair', 'blue eyes', 'blue hair', 'blue skin', 'bmovie',
     'body modification', 'bohemian', 'books', 'botmas', 'botmas 25', 'botmas25', 'british accent',
     'brown skin', 'brunette', 'bullypov', 'bullyweek', 'burn scars', 'bwc',
-    'cafe', 'café', 'cai', 'canon compliant', 'canon_compliant', 'canyousaveher', 'caregiver',
+    'cafe', 'café', 'cai', 'canon compliant', 'canon_compliant', 'canyousaveher',
     'cartoon', 'chameleon', 'chaotic', 'character', 'character expressions',
     'charismatic', 'chat', 'chat image', 'chat images', 'chatbot', 'chatroom', 'chess', 'chub',
     'chub love 2025', 'chubaween 2023', 'chubby', 'circus', 'city of darkness',
@@ -567,14 +569,14 @@ JUNK_EXACT = set(map(norm, [
     'cupidconnections', 'curious', 'curvy', 'curvy figure', 'cute', 'cute speech pattern',
     'cutebutdangerous', 'daredevil', 'dark-skinned', 'deadwood', 'demipov', 'demiweek',
     'demon pov', 'desert', 'detroit2220', 'dhu', 'diner', 'direct message', 'disabled user',
-    'divided skies', 'doll', 'dork', 'drowned earth', 'dumbasabrick', 'dungeon',
+    'divided skies', 'doll', 'drowned earth', 'dumbasabrick', 'dungeon',
     'eaglefangseries', 'eltaraseries', 'emergency', 'emotional intimacy', 'emotionally unavailable',
     'empath', 'empathetic', 'endoftheuniverse', 'enhanced', 'entertainment',
     'experimental', 'expression pack', 'expressions pack', 'extrovert', 'extroverted', 'fadeddreams',
     'fantasyweek', 'fem/femme', 'fempov', 'fictional',
     'fictional character', 'finalgirljam', 'first person', 'fish', 'fishoutofwater', 'fit',
     'flat chest', 'flatchested', 'forced proximity',
-    'fork', 'fork of a fork', 'france', 'freakacademy', 'freakyahhbot', 'freckles',
+    'fork', 'fork of a fork', 'freakacademy', 'freakyahhbot', 'freckles',
     'freezing', 'friendstosomething', 'fujoshi', 'gallery', 'gardenofsins',
     'geekdom', 'ginger', 'glasses', 'glowup',
     'gonuts', 'goodluckdude', 'goodpersonpov', 'gorgeous',
@@ -585,8 +587,8 @@ JUNK_EXACT = set(map(norm, [
     'huge butt', 'hyper butt', 'i love cheesecake', 'ilovewomen', 'image generating',
     'image greetings', 'images in gallery', 'immortal', 'incrediblydumb', 'independent',
     'indie', 'inner thoughts', 'intelligent', 'interactiveimages',
-    'interracial', 'interview', 'introverted', 'inverted nipples', 'islaport', 'itskandi',
-    'kakkodere', 'kayra', 'kinda cringe', 'kindofbrattyiguess', 'klinaterra',
+    'interracial', 'interview', 'inverted nipples', 'islaport', 'itskandi',
+    'kayra', 'kinda cringe', 'kindofbrattyiguess', 'klinaterra',
     'large anatomy', 'large breasts', 'large butt', 'lassie', 'little', 'little breasts', 'loj',
     'long hair', 'long legs', 'lore', 'lorebook', 'lorebook included', 'lorebookincluded',
     'los angeles', 'los arcanos', 'los fangeles', 'lost', 'lyozes', 'm4a', 'm4f',
@@ -601,11 +603,11 @@ JUNK_EXACT = set(map(norm, [
     'nicetbrazilianromance', 'no limits', 'non-humanpov', 'nosebleed',
     'not oc because its a fork hihiha', 'novelai', 'nsfwpics', 'oai', 'oc', 'oneofthebros',
     'oneorangebraincell', 'online', 'online chat', 'orange eyes', 'orca', 'original character',
-    'original characters', 'original_prose', 'pale skin', 'parallel universe', 'parasocial',
+    'original characters', 'original_prose', 'pale skin', 'parasocial',
     'passporttopages', 'paul', 'peace', 'perfect body',
     'petalsinwinter', 'petite', 'petrock', 'pets', 'physics', 'pictures', 'piercings',
-    'pink hair', 'pixie cut', 'plus size', 'pointed ears', 'possible', 'possiblefluff',
-    'possibleromance', 'post', 'poundseries', 'practice', 'presidentsdaughter', 'probably racist 👀',
+    'pink hair', 'pixie cut', 'plus size', 'pointed ears', 'possible',
+    'post', 'poundseries', 'practice', 'presidentsdaughter', 'probably racist 👀',
     'propagate her', 'psychiatristpov', 'purple eyes', 'raccoon',
     'ragequitter', 'reality tv', 'red eyes', 'red hair',
     'redhead', 'restaurant', 'reupload', 'reversed personality', 'richarrd', 'rimevale',
@@ -616,7 +618,7 @@ JUNK_EXACT = set(map(norm, [
     'sheepinwolfsclothing', 'sheiscrazy', 'shetallfr', 'short', 'short hair', 'shortstack', 'shotapov',
     'silly tavern', 'sillytavern', 'simulation', 'simulator', 'sitchel', 'skinny', 'small anatomy',
     'small breasts', 'smallbreasts', 'smuff', 'snake', 'social skills', 'southern', 'southern accent',
-    'snowstorm', 'special5k', 'spider', 'springfever', 'srank',
+    'snowstorm', 'special5k', 'spider', 'springfever',
     'starlight superhero universe', 'stars', 'starstruck world', 'std', 'stealingclothes', 'stepford',
     'straight', 'strong woman', 'stuck', 'stuckinanelevator', 'stuckindryer', 'stuckwithyou!',
     'suburbangothic', 'succession', 'supercity', 'superpowerweek', 'supportive', 'suspiciousbehavior',
@@ -630,7 +632,7 @@ JUNK_EXACT = set(map(norm, [
     'velkora', 'veltharion', 'veyonis', 'vikingpov', 'villainpov', 'voluptous', 'voruun',
     'w4a', 'w4m', 'weird!!! shes weird!!!!', 'well-intentioned extremist', 'wench',
     'what am i doing with my life', 'white hair', 'white worship', 'wholeawesome', 'wholesomeweek',
-    'wide hips', 'wish.com botjam', 'wmaf', 'woman', 'workshop botmas 25', 'xenosis', 'year900',
+    'wide hips', 'wish.com botjam', 'wmaf', 'workshop botmas 25', 'xenosis', 'year900',
     'zooweemama', '👤 anypov',
 ]))
 
@@ -647,39 +649,28 @@ HOLIDAY_PAT = [
     (re.compile(r'easter'), 'Easter'),
 ]
 
-# ---- classify -------------------------------------------------------------
+# ---- build the definitive dictionary (corpus-independent) ------------------
+# Ground truth IS the declared classification: every alias() entry grouped under
+# its canonical (each canonical also carries its own normalized form via the
+# ALIASES seed), plus the full declared junk set. This does not depend on any
+# corpus — everything declared here ships, whether or not a card uses it.
 mapping = defaultdict(set)
-removed = set()
-unmapped = set()
+for src_norm, canonical in ALIASES.items():
+    mapping[canonical].add(src_norm)
+removed = set(JUNK_EXACT) | set(MOOD_JUNK)
 
-for n, origs in norm_to_orig.items():
-    if n in ALIASES:
-        mapping[ALIASES[n]].update(origs)
-        continue
-    if n in JUNK_EXACT or n in MOOD_JUNK:
-        removed.update(origs)
-        continue
-    matched = False
-    for pat, canonical in HOLIDAY_PAT:
-        if pat.search(n):
-            mapping[canonical].update(origs)
-            matched = True
-            break
-    if not matched:
-        unmapped.update(origs)
+now = datetime.now(timezone.utc).isoformat(timespec='seconds')
 
-# ---- emit -----------------------------------------------------------------
+# ---- emit definitive dictionary -------------------------------------------
 out = {
-    'generatedAt': src.get('generatedAt'),
-    'cardCount': src.get('cardCount'),
+    'generatedAt': now,
     'canonicalCategories': CANON_BY_CAT,
     'mapping': {k: sorted(mapping[k]) for k in sorted(mapping)},
     'removedTags': sorted(removed),
-    'unmapped': sorted(unmapped, key=str.lower),
 }
 json.dump(out, open(f'{ROOT}/base-mapping-v2.json', 'w'), indent=2, ensure_ascii=False)
 
-# validation: each canonical belongs to exactly one category; no orphan mapping keys
+# validation: each canonical belongs to exactly one category; no orphan keys
 seen = {}
 for cat, tags in CANON_BY_CAT.items():
     for t in tags:
@@ -690,10 +681,44 @@ for k in mapping:
     if k not in seen:
         print(f'WARNING: mapping key "{k}" is not a defined canonical', file=sys.stderr)
 
-print(f'normalized source tags : {len(norm_to_orig)}')
-print(f'mapped to canonical    : {sum(1 for n in norm_to_orig if n in ALIASES or any(p.search(n) for p,_ in HOLIDAY_PAT))}')
-print(f'  (orig spellings       : {sum(len(v) for v in mapping.values())})')
+print(f'canonicals             : {len(ALL_CANON)}')
+print(f'declared variants      : {sum(len(v) for v in mapping.values())}')
 print(f'removed (junk)         : {len(removed)}')
-print(f'unmapped (for review)  : {len(unmapped)}')
-print(f'canonical defined/used : {len(ALL_CANON)} / {len(mapping)}')
-print(f'canonical UNUSED       : {sorted(set(ALL_CANON) - set(mapping))}')
+
+# ---- corpus coverage report (discovery only; never gates the dictionary) ---
+# Classify the corpus tags against the dictionary to surface anything we haven't
+# covered yet. Written to a separate, gitignored report. The committed dictionary
+# is unaffected and has no "unmapped" by construction.
+if src is not None:
+    def classify(n):
+        if n in ALIASES:
+            return 'mapped'
+        if n in removed:
+            return 'removed'
+        if any(p.search(n) for p, _ in HOLIDAY_PAT):
+            return 'mapped'
+        return 'unmapped'
+
+    coverage = defaultdict(set)
+    for n, origs in norm_to_orig.items():
+        coverage[classify(n)].update(origs)
+
+    hit_canon = {ALIASES[n] for n in norm_to_orig if n in ALIASES}
+    report = {
+        'generatedAt': now,
+        'corpus': 'card-tags.json',
+        'cardCount': src.get('cardCount'),
+        'corpusTags': len(norm_to_orig),
+        'mapped': len(coverage['mapped']),
+        'removed': len(coverage['removed']),
+        'unmappedCount': len(coverage['unmapped']),
+        'unmapped': sorted(coverage['unmapped'], key=str.lower),
+        'canonicalsWithoutCorpusHits': sorted(set(ALL_CANON) - hit_canon),
+    }
+    json.dump(report, open(f'{ROOT}/unmapped-report.json', 'w'), indent=2, ensure_ascii=False)
+    print(f'--- corpus coverage ({src.get("cardCount")} cards / {len(norm_to_orig)} tags) ---')
+    print(f'mapped / removed / UNMAPPED : '
+          f'{len(coverage["mapped"])} / {len(coverage["removed"])} / {len(coverage["unmapped"])}')
+    print('wrote unmapped-report.json (gitignored)')
+else:
+    print('no card-tags.json corpus present — skipped coverage report')

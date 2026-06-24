@@ -8,6 +8,24 @@
 // dictionary is generated offline by scripts/build-mapping.py.
 
 /**
+ * Normalize a tag to its match key. Mirrors scripts/build-mapping.py `norm()`
+ * exactly: trim, strip leading '#', trim again, collapse internal whitespace,
+ * lowercase. The shipped dictionary stores variants in this normalized form, so
+ * matching must normalize incoming tags the same way (this is what lets messy
+ * "#Female", "  female ", "FEMALE" all resolve to the same entry).
+ * @param {string} t
+ * @returns {string}
+ */
+export function norm(t) {
+    return String(t)
+        .trim()
+        .replace(/^#+/, '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase();
+}
+
+/**
  * Read the embedded card tags off a SillyTavern character object.
  * Prefers data.tags (the real V2/V3 field) and falls back to the root mirror.
  * @param {object} char
@@ -105,11 +123,11 @@ export function buildBuckets(characters, mapping, removedTags) {
     const map = mapping || {};
     const stats = scanTags(characters);
 
-    // Lowercased variant/canonical -> canonical key.
+    // Normalized variant/canonical -> canonical key.
     const lookup = new Map();
     for (const [canonical, variants] of Object.entries(map)) {
-        lookup.set(canonical.toLowerCase(), canonical);
-        for (const v of variants ?? []) lookup.set(String(v).toLowerCase(), canonical);
+        lookup.set(norm(canonical), canonical);
+        for (const v of variants ?? []) lookup.set(norm(v), canonical);
     }
 
     // Removed bucket, keyed by exact string. Seed declared junk at count 0 so the
@@ -117,7 +135,7 @@ export function buildBuckets(characters, mapping, removedTags) {
     const removedMap = new Map();
     const removedLookup = new Set();
     for (const t of removedTags ?? []) {
-        removedLookup.add(String(t).toLowerCase());
+        removedLookup.add(norm(t));
         if (!removedMap.has(String(t))) removedMap.set(String(t), { tag: String(t), count: 0, avatars: [] });
     }
 
@@ -137,10 +155,10 @@ export function buildBuckets(characters, mapping, removedTags) {
     const unassigned = [];
     for (const [tag, entry] of stats) {
         const variant = { tag, count: entry.count, avatars: [...entry.avatars] };
-        const canonical = lookup.get(tag.toLowerCase());
+        const canonical = lookup.get(norm(tag));
         if (canonical) {
             ensure(canonical).set(tag, variant); // observed string wins over the count-0 seed
-        } else if (removedLookup.has(tag.toLowerCase())) {
+        } else if (removedLookup.has(norm(tag))) {
             removedMap.set(tag, variant); // observed string wins over the count-0 seed
         } else {
             unassigned.push(variant);
@@ -166,31 +184,31 @@ export function buildBuckets(characters, mapping, removedTags) {
  * case-insensitively.
  * @param {string[]} currentTags
  * @param {Array<{canonical:string, variants:Array<{tag:string}>}>} approvedRows
- * @param {Set<string>} [removedSet]  lowercased tags to delete entirely
+ * @param {Set<string>} [removedSet]  normalized tags to delete entirely
  * @returns {string[]|null} new tag array, or null if nothing changed
  */
 export function applyRowsToTags(currentTags, approvedRows, removedSet) {
-    // Map lowercased variant -> canonical for every approved row.
+    // Map normalized variant -> canonical for every approved row.
     const variantToCanonical = new Map();
     for (const row of approvedRows) {
-        for (const v of row.variants) variantToCanonical.set(v.tag.toLowerCase(), row.canonical);
+        for (const v of row.variants) variantToCanonical.set(norm(v.tag), row.canonical);
     }
     const removed = removedSet ?? new Set();
 
     const result = [];
-    const seenLower = new Set();
+    const seen = new Set();
     let changed = false;
 
     const push = (tag) => {
-        const lower = tag.toLowerCase();
-        if (seenLower.has(lower)) { changed = true; return; } // dropped a dupe
-        seenLower.add(lower);
+        const key = norm(tag);
+        if (seen.has(key)) { changed = true; return; } // dropped a dupe
+        seen.add(key);
         result.push(tag);
     };
 
     for (const tag of currentTags) {
-        if (removed.has(tag.toLowerCase())) { changed = true; continue; } // junk — drop it
-        const canonical = variantToCanonical.get(tag.toLowerCase());
+        if (removed.has(norm(tag))) { changed = true; continue; } // junk — drop it
+        const canonical = variantToCanonical.get(norm(tag));
         if (canonical === undefined) {
             push(tag);
         } else {

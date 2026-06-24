@@ -8,6 +8,10 @@
 # Node (only if tooling is added later)
 node_modules/
 
+# Corpus coverage report — generated locally by scripts/build-mapping.py from
+# whatever test corpus is present; pure discovery output, never ground truth.
+unmapped-report.json
+
 # Python
 __pycache__/
 *.py[cod]
