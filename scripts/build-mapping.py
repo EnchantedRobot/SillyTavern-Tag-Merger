@@ -110,7 +110,7 @@ alias('Western', 'cowboy/cowgirl', 'cowgirl', 'frontier', 'gold rush', 'weird we
 alias('School', 'academy', 'cafeteria', 'high school', 'highschool', 'highschool reunion', 'reunion',
       'highschooldrama', 'kouhai', 'schoolgirl', 'student council', 'studentcouncil')
 alias('College', 'campus life', 'college dorm', 'college girl', 'college life', 'college student',
-      'collegestudent', 'dorm', 'dormitory', 'english major', 'sorority girl', 'university',
+      'collegestudent', 'dorm', 'dormitory', 'english major', 'hazing', 'sorority girl', 'university',
       'university student')
 alias('Workplace', 'corporate cruelty', 'office', 'office drama', 'office setting')
 alias('Small Town', 'countryside', 'suburban', 'suburbs', 'village')
@@ -213,7 +213,8 @@ alias('Crazy', 'batshitcrazy', 'delusional', 'insane', 'psychopath', 'psychosis'
       'schizophrenia', 'sociopath', 'unhinged')
 alias('Lonely', 'isolated', 'isolation', 'touch starved', 'touch starvation', 'touch-starved', 'touchedstarved')
 alias('Pushover', 'damselindistress', 'doormat', 'people pleaser')
-alias('Pervert', 'degenerate', 'filthy', 'perverted', 'secret slut', 'secretly horny', 'shameless')
+alias('Pervert', 'degenerate', 'filthy', 'goon', 'gooner', 'goonette', 'gooning', 'perverted',
+      'secret slut', 'secretly horny', 'shameless')
 alias('Goth', 'emo', 'goth girl', 'gothgirl', 'mall goth', 'scene girl')
 alias('Punk', 'heavy metal', 'metalhead', 'punkrock', 'punkrocker')
 alias('Stoner', 'pothead', 'smoker', 'vape smoker', 'weed')
@@ -410,7 +411,7 @@ alias('Fetish', 'accidental sex', 'age play', 'anal fixation', 'anal virginity',
 alias('Femdom', 'dommy mommy', 'dommymommy', 'femdom', 'findom', 'gentle femdom', 'gentlefemdom',
       'gothmommy', 'muscle mommy', 'soft femdom')
 alias('Breeding', 'alien breeding', 'breedable', 'breeding', 'breeding kink', 'breeding program',
-      'creampie', 'milking farm cow', 'womb tattoo', 'wombtattoo')
+      'creampie', 'fertility law', 'milking farm cow', 'womb tattoo', 'wombtattoo')
 alias('Foot Fetish', 'feet', 'feet fetish', 'foot fetish', 'footfetish', 'footjob', 'footworship',
       'trampling')
 alias('Sadomasochism', 'masochism', 'masochist', 'masochistic', 'ryona', 'sadism', 'sadist', 'sadistic')
@@ -508,6 +509,19 @@ alias('Dungeons & Dragons', 'd&amp;d', 'd&d', 'dnd', 'dungeon and dragons', 'dun
 alias('Harry Potter', 'hogwarts')
 alias('Disney', 'disney princess', 'disneyland', 'dreamworks', 'the incredibles')
 
+# Fandom — coined "series / universe" worlds private to the card-creator scene
+# (promoted out of junk; display names get proper casing/spacing, smushed source form kept as alias)
+alias('The Eternal Concord', 'theeternalconcord')
+alias('Arloxe', 'arloxe')
+alias('Alteyra', 'alteyra')
+alias('Arcanthea', 'arcanthea')
+alias('Memoria', 'memoria')
+alias('Saga of Light and Shadow', 'saga of light and shadow')
+alias('Broken Lace', 'brokenlace')
+alias('Drakonia', 'drakonia')
+alias('Nyxia', 'nyxia')
+alias('Virtularia', 'virtularia')
+
 # Mental Health / Condition
 alias('Depression', 'bpd', 'depressed', 'mental illness', 'mentally ill', 'suicidal',
       'suicidalchar')
@@ -533,16 +547,16 @@ JUNK_EXACT = set(map(norm, [
     'specific preferences', 'stargate', 'stray', 'support', 'thegoat', 'thin walls', 'train',
     '1870s', '1950s', '2009', '2025', '500tokenpower', 'abandoned demihumans botjam [the orchard]',
     'accent', 'accident', 'adolion', 'adorable', 'adorkable', 'aegis city heroes', 'aetherlink', 'ai',
-    'alichat', 'alteyra', 'ambitious', 'amogus', 'among us', 'amymatzumi', 'animals', 'animation',
+    'alichat', 'ambitious', 'amogus', 'among us', 'amymatzumi', 'animals', 'animation',
     'anime', 'anthro days,', 'any', 'any pov', 'any_pov', 'anypov',
-    'apartment', 'app', 'arcanthea', 'aremm', 'arlo', 'arloxe', 'art', 'asha', 'assassinpov',
+    'apartment', 'app', 'aremm', 'arlo', 'art', 'asha', 'assassinpov',
     'asylum', 'athletic girl', 'athletic women', 'autistic as fuck bruh', 'baby', 'badassy',
     'baddecisions', 'badpersonpov', 'bbgenrejam', 'bbw', 'beautiful',
     'bedroom', 'big ass', 'big boobies', 'big boobs', 'big breast', 'big breasts', 'big butt',
     'big thighs', 'big tits', 'big woman', 'bikini', 'bitch', 'bitchuniversity', 'black hair',
     'blackrose', 'bleached', 'blonde', 'blonde hair', 'blue eyes', 'blue hair', 'blue skin', 'bmovie',
     'body modification', 'bohemian', 'books', 'botmas', 'botmas 25', 'botmas25', 'british accent',
-    'brokenlace', 'brown skin', 'brunette', 'bullypov', 'bullyweek', 'burn scars', 'bwc',
+    'brown skin', 'brunette', 'bullypov', 'bullyweek', 'burn scars', 'bwc',
     'cafe', 'café', 'cai', 'canon compliant', 'canon_compliant', 'canyousaveher', 'caregiver',
     'cartoon', 'chameleon', 'chaotic', 'character', 'character expressions',
     'charismatic', 'chat', 'chat image', 'chat images', 'chatbot', 'chatroom', 'chess', 'chub',
@@ -553,19 +567,19 @@ JUNK_EXACT = set(map(norm, [
     'cupidconnections', 'curious', 'curvy', 'curvy figure', 'cute', 'cute speech pattern',
     'cutebutdangerous', 'daredevil', 'dark-skinned', 'deadwood', 'demipov', 'demiweek',
     'demon pov', 'desert', 'detroit2220', 'dhu', 'diner', 'direct message', 'disabled user',
-    'divided skies', 'doll', 'dork', 'drakonia', 'drowned earth', 'dumbasabrick', 'dungeon',
+    'divided skies', 'doll', 'dork', 'drowned earth', 'dumbasabrick', 'dungeon',
     'eaglefangseries', 'eltaraseries', 'emergency', 'emotional intimacy', 'emotionally unavailable',
     'empath', 'empathetic', 'endoftheuniverse', 'enhanced', 'entertainment',
     'experimental', 'expression pack', 'expressions pack', 'extrovert', 'extroverted', 'fadeddreams',
-    'fantasyweek', 'fem/femme', 'fempov', 'fertility law', 'fictional',
+    'fantasyweek', 'fem/femme', 'fempov', 'fictional',
     'fictional character', 'finalgirljam', 'first person', 'fish', 'fishoutofwater', 'fit',
     'flat chest', 'flatchested', 'forced proximity',
     'fork', 'fork of a fork', 'france', 'freakacademy', 'freakyahhbot', 'freckles',
     'freezing', 'friendstosomething', 'fujoshi', 'gallery', 'gardenofsins',
     'geekdom', 'ginger', 'glasses', 'glowup',
-    'gonuts', 'goodluckdude', 'goodpersonpov', 'goon', 'gooner', 'goonette', 'gooning', 'gorgeous',
+    'gonuts', 'goodluckdude', 'goodpersonpov', 'gorgeous',
     'gpt3.5turbo', 'gpt4', 'green eyes', 'greeting art', 'greeting images',
-    'groupiepov', 'grumpy', 'hallura', 'handlewithcare', 'hardtimes', 'harmony heroines', 'hazing',
+    'groupiepov', 'grumpy', 'hallura', 'handlewithcare', 'hardtimes', 'harmony heroines',
     'heroparty', 'hiddenpersonality', 'holidays', 'holidays2025', 'home', 'homestay', 'horse',
     'horse streamer', 'horsecock', 'hot', 'hotel', 'huge ass', 'huge breasts',
     'huge butt', 'hyper butt', 'i love cheesecake', 'ilovewomen', 'image generating',
@@ -578,14 +592,14 @@ JUNK_EXACT = set(map(norm, [
     'los angeles', 'los arcanos', 'los fangeles', 'lost', 'lyozes', 'm4a', 'm4f',
     'magia', 'magika', 'maincharactersyndrome', 'malaysia', 'malepov',
     'manga', 'mao bao', 'marysue', 'massive ass', 'massive breasts', 'medium breasts',
-    'megane', 'meganekko', 'meltsyourheart', 'memes', 'memoria', 'meowami',
+    'megane', 'meganekko', 'meltsyourheart', 'memes', 'meowami',
     'minneapolis', 'misunderstanding', 'mitsuri', 'mitsurikanroji', 'miyabisearstd6',
     'monsterpov', 'moondropvalley', 'moraldilemma', 'more death threats than a call of duty lobby',
     'moth', 'movie', 'movies & tv', 'multiple greetings',
     'multiple personality', 'multiple scenarios', 'multiple_greetings', 'muscle', 'muscular',
     'music maina', 'music mania', 'musicmaina2', 'musicmania', 'musicmania2', 'mythomax', 'new houston',
     'nicetbrazilianromance', 'no limits', 'non-humanpov', 'nosebleed',
-    'not oc because its a fork hihiha', 'novelai', 'nsfwpics', 'nyxia', 'oai', 'oc', 'oneofthebros',
+    'not oc because its a fork hihiha', 'novelai', 'nsfwpics', 'oai', 'oc', 'oneofthebros',
     'oneorangebraincell', 'online', 'online chat', 'orange eyes', 'orca', 'original character',
     'original characters', 'original_prose', 'pale skin', 'parallel universe', 'parasocial',
     'passporttopages', 'paul', 'peace', 'perfect body',
@@ -596,7 +610,7 @@ JUNK_EXACT = set(map(norm, [
     'ragequitter', 'reality tv', 'red eyes', 'red hair',
     'redhead', 'restaurant', 'reupload', 'reversed personality', 'richarrd', 'rimevale',
     'rokos basilisk', 'roleplay', 'root', 's.t.a.l.k.e.r', 's.t.a.l.k.e.r.', 'sacrifice',
-    'saga of light and shadow', 'sandbox', 'sapiosexual', 'sarah', 'sarntetralogy', 'scenario',
+    'sandbox', 'sapiosexual', 'sarah', 'sarntetralogy', 'scenario',
     'second person-pov', 'self insert', 'self-aware', 'selfbot', 'selfdestructive', 'selfinsert',
     'sensitive', 'sequel card', 'sexbot', 'sexy', 'shadow clones', 'shaved', 'sheaveragefr',
     'sheepinwolfsclothing', 'sheiscrazy', 'shetallfr', 'short', 'short hair', 'shortstack', 'shotapov',
@@ -607,13 +621,13 @@ JUNK_EXACT = set(map(norm, [
     'straight', 'strong woman', 'stuck', 'stuckinanelevator', 'stuckindryer', 'stuckwithyou!',
     'suburbangothic', 'succession', 'supercity', 'superpowerweek', 'supportive', 'suspiciousbehavior',
     'swimsuit', 'tall', 'tall woman', 'tanned', 'tattoos', 'tavern', 'teasingaffecftion', 'tech',
-    'technology', 'texting', 'the beginning', 'thebasement', 'theeternalconcord',
+    'technology', 'texting', 'the beginning', 'thebasement',
     'thesunderedstars', 'theunderworldchapter', 'theworldofterra', 'thicc', 'thick', 'thick thighs',
     'thigh', 'third person', 'time', 'tiny', 'tiny titties', 'tits', 'toned muscles',
     'trust', 'twintails', 'ughhhhyixuannnn', 'undeniably a coom bot', 'underagepov',
     'unestablished relationship', 'unity space opera', 'unreliable narrator', 'unreliable/flakey',
     'unsealed', 'untaguniverse', 'urban fiction', 'urbex gone wrong', 'user harm', 'vartania',
-    'velkora', 'veltharion', 'veyonis', 'vikingpov', 'villainpov', 'virtularia', 'voluptous', 'voruun',
+    'velkora', 'veltharion', 'veyonis', 'vikingpov', 'villainpov', 'voluptous', 'voruun',
     'w4a', 'w4m', 'weird!!! shes weird!!!!', 'well-intentioned extremist', 'wench',
     'what am i doing with my life', 'white hair', 'white worship', 'wholeawesome', 'wholesomeweek',
     'wide hips', 'wish.com botjam', 'wmaf', 'woman', 'workshop botmas 25', 'xenosis', 'year900',

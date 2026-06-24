@@ -7,3 +7,10 @@
 
 # Node (only if tooling is added later)
 node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
