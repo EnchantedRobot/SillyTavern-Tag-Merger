@@ -18,6 +18,7 @@
         "loveatfirstfright",
         "loveconquersall",
         "lover",
+        "lovesyou",
         "morning after",
         "oppositeattract",
         "opposites attract",
@@ -135,6 +136,7 @@
       "Isekai": [
         "alternate universe",
         "gate",
+        "isekaiadventures",
         "parallel universe",
         "portal fantasy",
         "reverse isekai",
@@ -179,6 +181,7 @@
         "comfort",
         "comfy",
         "cozy",
+        "cozyweek",
         "cuddles",
         "healing",
         "heartwarming",
@@ -189,6 +192,7 @@
         "fluffweek",
         "fluffy",
         "gift giving",
+        "giftwrapped",
         "possiblefluff"
       ],
       "Angst": [
@@ -248,7 +252,9 @@
         "retro",
         "victorian"
       ],
-      "Medieval": [],
+      "Medieval": [
+        "medievalrpg"
+      ],
       "Ancient": [
         "ancientgreece",
         "rome",
@@ -311,6 +317,7 @@
         "english major",
         "hazing",
         "sorority girl",
+        "uni",
         "university",
         "university student"
       ],
@@ -351,16 +358,20 @@
         "holiday",
         "hot spring",
         "island",
+        "oceanvibes",
         "onsen",
         "remote cabin",
         "road trip",
         "site seeing",
         "spa",
         "summer",
+        "summervibes",
         "tahiti",
         "theme park",
         "tourist",
         "travel",
+        "waterfun",
+        "waterpark",
         "wilderness"
       ]
     },
@@ -409,6 +420,7 @@
         "gremlin",
         "horse girl",
         "monstergirl",
+        "sharkgirl",
         "sheep",
         "sheepgirl",
         "sheepkin",
@@ -418,11 +430,13 @@
       "Cat Girl": [
         "cat ears and cat tail",
         "catgirl",
+        "cheetahgirl",
         "magiccat",
         "neko",
         "nekomimi",
         "orange tabby",
-        "panthergirl"
+        "panthergirl",
+        "tigergirl"
       ],
       "Fox Girl": [
         "foxgirl",
@@ -434,7 +448,9 @@
         "wolfgirl"
       ],
       "Dog Girl": [
-        "doggirl"
+        "doggirl",
+        "goldenretriever",
+        "labradorretrievergirl"
       ],
       "Bunny Girl": [
         "bunny",
@@ -442,10 +458,12 @@
         "bunnygirl",
         "bunnygirloutfit",
         "rabbit anthro",
-        "rabbit girl"
+        "rabbit girl",
+        "rabbitgirl"
       ],
       "Elf": [
         "elf princess",
+        "elfmommy",
         "elves",
         "half-elf",
         "high elf",
@@ -459,6 +477,7 @@
         "demon girl",
         "demon lord",
         "demon summoning",
+        "demonic",
         "demonqueen",
         "demons",
         "oni"
@@ -619,8 +638,10 @@
         "europe",
         "france",
         "french",
+        "german",
         "irish",
         "italian",
+        "norwegian",
         "scottish",
         "swedish"
       ],
@@ -628,6 +649,9 @@
         "gypsies",
         "gypsy",
         "roma"
+      ],
+      "Oceanian": [
+        "australian"
       ]
     },
     "Personality / Archetype": {
@@ -714,14 +738,20 @@
         "snarky"
       ],
       "Kind": [
+        "actuallysweet",
         "deredere",
         "devoted",
         "friendly",
+        "friendlygirl",
         "gentle",
         "helpful",
         "loving",
+        "lowksweet",
+        "nicegirl",
+        "shesweetfr",
         "soft",
-        "sweet"
+        "sweet",
+        "sweetheart"
       ],
       "Caring": [
         "affectionate",
@@ -784,10 +814,12 @@
         "stupid"
       ],
       "Mean": [
+        "baddie",
         "bitchy",
         "brash",
         "chav",
         "cocky",
+        "diva",
         "greedy",
         "hateful",
         "haughty",
@@ -799,6 +831,7 @@
         "meangirl",
         "queen bee",
         "queenbee",
+        "queenbeeweek",
         "rude"
       ],
       "Manipulative": [
@@ -897,6 +930,7 @@
         "heiress",
         "ojou-sama",
         "rich girl",
+        "richkid",
         "wealthy"
       ],
       "Loser": [
@@ -978,7 +1012,8 @@
         "enemies with benefits",
         "friendswithbenefits",
         "fuckbuddies",
-        "fwb"
+        "fwb",
+        "mutualbenefit"
       ],
       "Stranger": [
         "chance meeting",
@@ -989,8 +1024,11 @@
       ],
       "Roommate": [
         "cohabitation",
+        "flatmate",
+        "flatsharing",
         "housemate",
         "live-in relationship",
+        "newroommate",
         "roomate"
       ],
       "Neighbor": [
@@ -1002,7 +1040,8 @@
       "Coworker": [
         "colleague",
         "office girl",
-        "office lady"
+        "office lady",
+        "workwife"
       ],
       "Classmate": [
         "schoolmate"
@@ -1120,6 +1159,7 @@
       ],
       "Idol": [
         "idol manager",
+        "idolxbodyguard",
         "j-pop",
         "jpop",
         "k-pop",
@@ -1153,7 +1193,8 @@
         "internet famous",
         "itgirl",
         "popular",
-        "popular girl"
+        "popular girl",
+        "populargirl"
       ],
       "Fiancee": [
         "bride",
@@ -1167,6 +1208,7 @@
         "bulliedchar",
         "bulluser",
         "bully victim",
+        "bullyboyfriend",
         "bullying",
         "bullyuser",
         "childhood bully",
@@ -1241,6 +1283,7 @@
         "tinder match"
       ],
       "Unrequited Love": [
+        "closetedcrush",
         "crush",
         "fangirl",
         "friendzone",
@@ -1251,6 +1294,7 @@
         "secret crush",
         "secretattraction",
         "secretcrush",
+        "shecrushing",
         "unrequitedlove"
       ],
       "Long Distance": [
@@ -1359,6 +1403,9 @@
         "sportgirl",
         "sporty",
         "surfer",
+        "surfing",
+        "swimmer",
+        "trackstar",
         "volleyball",
         "workout",
         "wrestling",
@@ -1415,6 +1462,7 @@
         "rave"
       ],
       "Gambling": [
+        "bet",
         "casino",
         "debt",
         "high stakes",
@@ -1467,6 +1515,7 @@
         "erotic",
         "erotica",
         "exploration of sexuality",
+        "fantasysmut",
         "first time",
         "freakinthesheets",
         "horny",
@@ -1529,7 +1578,8 @@
         "notntr"
       ],
       "Netori": [
-        "optionalnetori"
+        "optionalnetori",
+        "stealinggf"
       ],
       "Netorase": [
         "nts"
@@ -1672,6 +1722,7 @@
         "hostage",
         "indentured",
         "master-servant",
+        "owned",
         "owner",
         "ownership",
         "servant",
@@ -1696,7 +1747,8 @@
         "stealth sex"
       ],
       "Rough Sex": [
-        "hate sex"
+        "hate sex",
+        "hatesexkinda"
       ],
       "Virgin": [
         "kissless virgin",
@@ -1836,6 +1888,7 @@
         "risqué",
         "scat",
         "secretlykinky",
+        "semenstealing",
         "sensory play",
         "sexual awakening",
         "sexual roleplay",
@@ -1894,6 +1947,7 @@
         "gentlefemdom",
         "gothmommy",
         "muscle mommy",
+        "musclemommy",
         "soft femdom"
       ],
       "Breeding": [
@@ -2016,6 +2070,7 @@
         "waiter"
       ],
       "Artist": [
+        "artsy",
         "fashion designer",
         "florist",
         "guitarist",
@@ -2025,7 +2080,8 @@
         "vocalist"
       ],
       "Writer": [
-        "author"
+        "author",
+        "Journalist"
       ],
       "Scientist": [
         "archeologist",
@@ -2238,7 +2294,8 @@
         "saved from rape",
         "saveher",
         "saviorfagging",
-        "saviorkink"
+        "saviorkink",
+        "saviour"
       ],
       "Stockholm Syndrome": [
         "stockholmsyndrome"
@@ -2267,7 +2324,9 @@
         "survivor"
       ],
       "Sleep": [
+        "bedsharing",
         "insomnia",
+        "sharedhotelroom",
         "sleep paralysis",
         "sleep sex",
         "sleeping",
@@ -2459,6 +2518,7 @@
     "accident",
     "adolion",
     "adorable",
+    "adorablefrfr",
     "adorkable",
     "aegis city heroes",
     "aetherlink",
@@ -2489,6 +2549,7 @@
     "asylum",
     "athletic girl",
     "athletic women",
+    "aurelius",
     "authentic responses",
     "autistic as fuck bruh",
     "avoidabletf",
@@ -2574,6 +2635,7 @@
     "conversation",
     "cooked",
     "coombot",
+    "cravingsandurges",
     "crestfalltown",
     "crestfalltownoc",
     "cringe but cute",
@@ -2639,6 +2701,7 @@
     "flat chest",
     "flatchested",
     "forced proximity",
+    "foreignerseries",
     "fork",
     "fork of a fork",
     "found again",
@@ -2647,6 +2710,7 @@
     "freckles",
     "freezing",
     "friendstosomething",
+    "Fucklympics",
     "fujoshi",
     "gallery",
     "gardenofsins",
@@ -2684,7 +2748,9 @@
     "horse streamer",
     "horsecock",
     "hot",
+    "hotaf",
     "hotel",
+    "hottie",
     "huge ass",
     "huge breasts",
     "huge butt",
@@ -2752,6 +2818,7 @@
     "memes",
     "meowami",
     "minneapolis",
+    "misfitstales",
     "misunderstanding",
     "mitsuri",
     "mitsurikanroji",
@@ -2775,6 +2842,8 @@
     "musicmania",
     "musicmania2",
     "mythomax",
+    "needshelp",
+    "needstowarmup",
     "new houston",
     "nicetbrazilianromance",
     "nihilistic",
@@ -2938,6 +3007,7 @@
     "tiny titties",
     "tits",
     "toned muscles",
+    "touch",
     "train",
     "trust",
     "twintails",
@@ -2959,6 +3029,7 @@
     "veyonis",
     "vikingpov",
     "villainpov",
+    "vira",
     "voluptous",
     "voruun",
     "w4a",
