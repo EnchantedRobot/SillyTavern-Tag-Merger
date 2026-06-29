@@ -383,6 +383,7 @@
         "beargirl",
         "beastkin",
         "demihuman",
+        "ferretgirl",
         "fluffy tail",
         "horns",
         "hybriddemihuman",
@@ -930,6 +931,7 @@
         "heiress",
         "ojou-sama",
         "rich girl",
+        "richgirl",
         "richkid",
         "wealthy"
       ],
@@ -956,6 +958,7 @@
       "Morally Gray": [
         "anti hero",
         "anti-hero",
+        "conflictedchar",
         "morallygray"
       ]
     },
@@ -1235,6 +1238,7 @@
       ],
       "Fake Dating": [
         "fake relationship",
+        "fakedate",
         "fakedating"
       ],
       "Friends to Enemies": [
@@ -1520,6 +1524,7 @@
         "freakinthesheets",
         "horny",
         "hornybum",
+        "kindofsmut",
         "kinky",
         "lewd content",
         "lust",
@@ -1662,6 +1667,7 @@
       ],
       "Corruption": [
         "corrupted",
+        "corruptible",
         "corruptyourfriend",
         "slow corruption"
       ],
@@ -1735,6 +1741,7 @@
         "trafficked"
       ],
       "Cuckold": [
+        "bullpov",
         "cuck",
         "cuckolding",
         "cuckquean",
@@ -1818,6 +1825,7 @@
         "wife sharing"
       ],
       "Incest": [
+        "brother x sister",
         "oyakodon",
         "step incest",
         "stepcest",
@@ -1835,10 +1843,12 @@
         "begging",
         "bestiality",
         "bimbofication",
+        "blood play",
         "bloodplay",
         "body betrayal",
         "body odor",
         "body worship",
+        "breath play",
         "bromidrophilia",
         "bukkake",
         "chastity",
@@ -2355,7 +2365,10 @@
         "racism",
         "rebellion"
       ],
-      "Secret": []
+      "Secret": [],
+      "Forced Proximity": [
+        "forcedproximity"
+      ]
     },
     "Fandom": {
       "Genshin Impact": [
