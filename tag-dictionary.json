@@ -30,13 +30,16 @@
         "rom",
         "romantic",
         "romantical",
+        "secondchanceinlove",
         "soulmate",
         "true love",
         "unconditional love",
         "virgin emotions",
         "yearning"
       ],
-      "Drama": [],
+      "Drama": [
+        "relationshipdrama"
+      ],
       "Comedy": [
         "comedic",
         "dark comedy",
@@ -189,7 +192,8 @@
         "cuddling",
         "healing",
         "heartwarming",
-        "surprisingly wholesome"
+        "surprisingly wholesome",
+        "wholesomeandsweet"
       ],
       "Fluff": [
         "domestic intimacy",
@@ -317,6 +321,7 @@
         "college girl",
         "college life",
         "college student",
+        "collegelife",
         "collegestudent",
         "dorm",
         "dormitory",
@@ -348,6 +353,7 @@
         "farmer",
         "farmer/farmhand",
         "farmergirl",
+        "outdoors",
         "peasant"
       ],
       "Magic Academy": [
@@ -689,6 +695,7 @@
         "quiet",
         "repressed",
         "reserved",
+        "sociallyawkward",
         "timid"
       ],
       "Cold": [
@@ -712,6 +719,7 @@
         "manic"
       ],
       "Playful": [
+        "goofy",
         "mischevious",
         "mischievous",
         "quirky",
@@ -728,6 +736,7 @@
         "sultry"
       ],
       "Possessive": [
+        "keepyourhandsoff",
         "obsessed",
         "obsessive"
       ],
@@ -821,6 +830,7 @@
         "gal",
         "gyaru",
         "intelligent bimbo",
+        "nobrain",
         "stupid"
       ],
       "Mean": [
@@ -832,6 +842,7 @@
         "diva",
         "greedy",
         "hateful",
+        "hatesyou",
         "haughty",
         "kamidere",
         "karen",
@@ -880,11 +891,13 @@
         "insane",
         "psychopath",
         "sociopath",
-        "unhinged"
+        "unhinged",
+        "unstable"
       ],
       "Lonely": [
         "isolated",
         "isolation",
+        "lonerchar",
         "touch starvation",
         "touch starved",
         "touch-starved",
@@ -898,6 +911,7 @@
       "Pervert": [
         "degenerate",
         "filthy",
+        "freak",
         "goon",
         "gooner",
         "goonette",
@@ -943,6 +957,7 @@
         "rich girl",
         "richgirl",
         "richkid",
+        "southernbelle",
         "wealthy"
       ],
       "Loser": [
@@ -962,6 +977,7 @@
         "cosplayer"
       ],
       "Delinquent": [
+        "deliquentuser",
         "troublemaker"
       ],
       "Hippie": [],
@@ -1008,6 +1024,8 @@
       "Friend": [
         "friendssister",
         "platonic",
+        "sistersfriend",
+        "SistersFriend",
         "wifesfriend"
       ],
       "Friends to Lovers": [
@@ -1017,6 +1035,7 @@
       ],
       "Enemies to Lovers": [
         "enemies",
+        "enemy",
         "rival",
         "rivalry",
         "rivals"
@@ -1048,6 +1067,7 @@
         "roomate"
       ],
       "Neighbor": [
+        "girlnextdoor",
         "neigbor",
         "neighborchar",
         "neighbour",
@@ -1169,7 +1189,8 @@
         "prince",
         "princess",
         "queen",
-        "royal"
+        "royal",
+        "royalweek"
       ],
       "Maid": [],
       "Nun": [
@@ -1329,6 +1350,7 @@
       ],
       "Ex-Girlfriend": [
         "ex girlfriend",
+        "exgirlfriends",
         "exgirlfriendssister"
       ],
       "Companion": [
@@ -1379,6 +1401,7 @@
     },
     "Cast": {
       "Multiple Characters": [
+        "doylesisters",
         "ensemble",
         "ensemble cast",
         "group chat",
@@ -1412,6 +1435,7 @@
         "boxing",
         "cheerleader",
         "cheerleaders",
+        "climbing",
         "college cheerleader",
         "competitive",
         "figure skater",
@@ -1589,6 +1613,7 @@
         "ntr crusade",
         "ntr-adjacent",
         "ntrbait",
+        "optionalntr",
         "possible ntr",
         "possiblentr",
         "post-ntr",
@@ -1621,7 +1646,8 @@
         "impliedcheating",
         "infidelity",
         "kindacheating",
-        "possiblecheating"
+        "possiblecheating",
+        "sleptwith"
       ],
       "Harem": [
         "multiple girls"
@@ -1635,6 +1661,7 @@
         "dom",
         "dommy",
         "gentledom",
+        "ownsyou",
         "servicetop",
         "soft dom"
       ],
@@ -1686,7 +1713,8 @@
         "pregegnant",
         "preggo",
         "pregnant",
-        "pregonant"
+        "pregonant",
+        "pregweek"
       ],
       "Corruption": [
         "corrupted",
@@ -2103,7 +2131,8 @@
         "crime syndicate",
         "gangster",
         "mob",
-        "yakuza"
+        "yakuza",
+        "yakuzaprincess"
       ],
       "Criminal": [],
       "Bartender": [
@@ -2239,6 +2268,7 @@
     "Plot / Theme": {
       "Betrayal": [
         "bestfriendbetrayal",
+        "loyaltytest",
         "possiblebetrayal"
       ],
       "Revenge": [
@@ -2334,7 +2364,8 @@
       "Alcohol": [
         "alcoholic",
         "drunk",
-        "drunkmistake"
+        "drunkmistake",
+        "drunknight"
       ],
       "Savior": [
         "reverse savior",
@@ -2489,6 +2520,12 @@
       ],
       "Paradoxium": [
         "paradoxium"
+      ],
+      "Urban Shadows": [
+        "urbanshadows"
+      ],
+      "Final Revelation": [
+        "finalrevelation"
       ]
     },
     "Mental Health / Condition": {
@@ -2567,7 +2604,6 @@
     "2025",
     "5 greetings",
     "500tokenpower",
-    "Fucklympics",
     "abandoned demihumans botjam [the orchard]",
     "accent",
     "accident",
@@ -2613,6 +2649,8 @@
     "badassy",
     "baddecisions",
     "badpersonpov",
+    "badpov",
+    "baduser",
     "bbgenrejam",
     "bbw",
     "beautiful",
@@ -2627,6 +2665,7 @@
     "big tits",
     "big woman",
     "bigass",
+    "bigtiddies",
     "bikini",
     "bitch",
     "bitchuniversity",
@@ -2724,6 +2763,7 @@
     "doll",
     "drowned earth",
     "dumbasabrick",
+    "dumbassweek",
     "dungeon",
     "eaglefangseries",
     "elevator",
@@ -2770,6 +2810,7 @@
     "freckles",
     "freezing",
     "friendstosomething",
+    "Fucklympics",
     "fujoshi",
     "gallery",
     "gardenofsins",
@@ -2947,6 +2988,7 @@
     "pixie cut",
     "plus size",
     "pointed ears",
+    "popularuser",
     "possible",
     "post",
     "poundseries",
