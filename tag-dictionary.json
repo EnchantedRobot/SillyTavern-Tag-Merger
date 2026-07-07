@@ -68,6 +68,7 @@
         "sol"
       ],
       "Fantasy": [
+        "easternfantasy",
         "fantasies",
         "fantastic",
         "fantasty",
@@ -289,6 +290,7 @@
         "space girl",
         "space opera",
         "space pirate",
+        "spaceadventure",
         "spaceship",
         "starship"
       ],
@@ -385,6 +387,9 @@
         "waterfun",
         "waterpark",
         "wilderness"
+      ],
+      "Colony": [
+        "colonists"
       ]
     },
     "Species / Non-Human": {
@@ -2057,6 +2062,7 @@
       "Knight": [
         "female knight",
         "highlander",
+        "knightuser",
         "paladin"
       ],
       "Warrior": [
@@ -2252,6 +2258,7 @@
         "massage",
         "massage therapist",
         "part-timer",
+        "peasantchar",
         "pink collar",
         "receptionist",
         "retail",
@@ -2268,8 +2275,10 @@
     "Plot / Theme": {
       "Betrayal": [
         "bestfriendbetrayal",
+        "betrayedchar",
         "loyaltytest",
-        "possiblebetrayal"
+        "possiblebetrayal",
+        "sacrificechar"
       ],
       "Revenge": [
         "vengeance"
@@ -2526,7 +2535,8 @@
       ],
       "Final Revelation": [
         "finalrevelation"
-      ]
+      ],
+      "Nikke": []
     },
     "Mental Health / Condition": {
       "Depression": [
@@ -2566,6 +2576,7 @@
       "Disability": [
         "anorexic",
         "blind",
+        "blindchar",
         "cancer",
         "cripple",
         "deaf",
@@ -3154,6 +3165,10 @@
     "xenosis",
     "year900",
     "zooweemama",
-    "👤 anypov"
+    "👤 anypov",
+    "nonocweek",
+    "purple hair",
+    "artefactuser",
+    "sunflower"
   ]
 }
