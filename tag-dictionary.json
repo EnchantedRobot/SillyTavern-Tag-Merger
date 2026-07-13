@@ -193,7 +193,9 @@
         "cuddling",
         "healing",
         "heartwarming",
+        "loveherpls",
         "surprisingly wholesome",
+        "walkherhome",
         "wholesomeandsweet"
       ],
       "Fluff": [
@@ -209,11 +211,14 @@
         "emotional damage",
         "emotional erosion",
         "heavyangst",
-        "heavyangstdrama"
+        "heavyangstdrama",
+        "potentialangst"
       ],
       "Hurt/Comfort": [
+        "comforther",
         "comfortsex",
         "emotional vulnerability",
+        "hugherpls",
         "hurt-comfort",
         "hurtcomfort",
         "traumacomfort",
@@ -342,6 +347,7 @@
       ],
       "Small Town": [
         "countryside",
+        "smalltowngirl",
         "suburban",
         "suburbs",
         "village"
@@ -356,7 +362,8 @@
         "farmer/farmhand",
         "farmergirl",
         "outdoors",
-        "peasant"
+        "peasant",
+        "southerngirl"
       ],
       "Magic Academy": [
         "magicacademy",
@@ -369,6 +376,7 @@
         "cabin",
         "cabin beach weekend",
         "camping",
+        "campingtrip",
         "holiday",
         "hot spring",
         "island",
@@ -397,6 +405,7 @@
       "Demi-Human": [
         "animal ears",
         "animal girl",
+        "axolotlchar",
         "beargirl",
         "beastkin",
         "demihuman",
@@ -421,6 +430,7 @@
         "halfbreed",
         "humanoid",
         "interspecies",
+        "living doll",
         "monster",
         "monsters",
         "mutant",
@@ -457,6 +467,7 @@
         "tigergirl"
       ],
       "Fox Girl": [
+        "fox",
         "foxgirl",
         "gumiho",
         "kitsune"
@@ -514,6 +525,7 @@
         "banished goddess",
         "deity",
         "deity / god / goddess",
+        "demigod",
         "divine",
         "divinity",
         "goddesbot",
@@ -679,6 +691,7 @@
         "yanderetsunderehybrid"
       ],
       "Yandere": [
+        "shemightkillyou",
         "slight yandere",
         "soft yandere"
       ],
@@ -698,6 +711,7 @@
         "introverted",
         "nervous",
         "quiet",
+        "quietgirl",
         "repressed",
         "reserved",
         "sociallyawkward",
@@ -781,9 +795,11 @@
         "caregiver",
         "caretaker",
         "motherly",
-        "nurturing"
+        "nurturing",
+        "shewillpamperyou"
       ],
       "Protective": [
+        "protectheratallcosts",
         "strongbutgentle"
       ],
       "Loyal": [],
@@ -805,6 +821,8 @@
       ],
       "Tomboy": [
         "muscular tomboy",
+        "nicetomboyromance",
+        "tomboygirlfriend",
         "tomboyish",
         "toned tomboy"
       ],
@@ -831,6 +849,7 @@
         "dumb",
         "dumb bimbo",
         "dumbass",
+        "dumbchar",
         "dummy",
         "gal",
         "gyaru",
@@ -884,7 +903,8 @@
         "innocentpure",
         "naive",
         "oblivious",
-        "pure"
+        "pure",
+        "sheltered"
       ],
       "Clumsy": [
         "klutz",
@@ -976,12 +996,14 @@
         "neet",
         "neet girl",
         "norizz",
+        "popularxloser",
         "unpopularuser"
       ],
       "Cosplay": [
         "cosplayer"
       ],
       "Delinquent": [
+        "delinquentxgoodgirl",
         "deliquentuser",
         "troublemaker"
       ],
@@ -992,6 +1014,9 @@
         "anti-hero",
         "conflictedchar",
         "morallygray"
+      ],
+      "Cutie": [
+        "cutiealert"
       ]
     },
     "Relationship / Role": {
@@ -1085,6 +1110,7 @@
         "workwife"
       ],
       "Classmate": [
+        "classmatechar",
         "schoolmate"
       ],
       "Boss": [],
@@ -1092,6 +1118,7 @@
         "mentor",
         "professor",
         "professoruser",
+        "professorxstudent",
         "tutor",
         "virgin teacher"
       ],
@@ -1195,7 +1222,8 @@
         "princess",
         "queen",
         "royal",
-        "royalweek"
+        "royalweek",
+        "runawayprincess"
       ],
       "Maid": [],
       "Nun": [
@@ -1316,6 +1344,7 @@
       "Cousin": [],
       "Dating": [
         "blind date",
+        "blinddate",
         "catfish",
         "date",
         "dating app",
@@ -1328,6 +1357,7 @@
         "meet-cute",
         "new relationship",
         "newrelationship",
+        "situationship",
         "somethingmore",
         "speed dating",
         "speeddating",
@@ -1633,7 +1663,8 @@
         "no-ntr",
         "nonntr",
         "nontr",
-        "notntr"
+        "notntr",
+        "ntrbutnotreally"
       ],
       "Netori": [
         "optionalnetori",
@@ -2025,6 +2056,7 @@
         "gothmommy",
         "muscle mommy",
         "musclemommy",
+        "shecansteponme",
         "soft femdom"
       ],
       "Breeding": [
@@ -2394,7 +2426,8 @@
         "messyromance",
         "moving on",
         "movingon",
-        "rejection"
+        "rejection",
+        "youlefther"
       ],
       "Pandemic": [],
       "Refugee": [
@@ -2443,9 +2476,12 @@
         "racism",
         "rebellion"
       ],
-      "Secret": [],
+      "Secret": [
+        "rumor"
+      ],
       "Forced Proximity": [
-        "forcedproximity"
+        "forcedproximity",
+        "sharingabed"
       ]
     },
     "Fandom": {
@@ -2571,7 +2607,8 @@
         "traumatized"
       ],
       "Autism": [
-        "autistic"
+        "autistic",
+        "autisticchar"
       ],
       "Disability": [
         "anorexic",
@@ -2606,7 +2643,11 @@
         "schizophrenia"
       ],
       "Neurodivergent": [
-        "adhd"
+        "adhd",
+        "neurodivergentchar"
+      ],
+      "Mental Health": [
+        "mentalhealth"
       ]
     }
   },
@@ -3169,6 +3210,8 @@
     "nonocweek",
     "purple hair",
     "artefactuser",
-    "sunflower"
+    "sunflower",
+    "bait",
+    "discord"
   ]
 }
