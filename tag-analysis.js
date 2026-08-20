@@ -9,6 +9,14 @@
 // and is flattened to { canonical: [alias…] } on load.
 
 /**
+ * Default cutoff (in normalized characters) above which a tag is considered
+ * "too long" by buildBuckets/applyRowsToTags when no explicit maxTagLength is
+ * passed in. Some card authors dump a full sentence into the tag list instead
+ * of a keyword — this catches that without anyone having to name the offender.
+ */
+export const DEFAULT_MAX_TAG_LENGTH = 40;
+
+/**
  * Normalize a tag to its match key: trim, strip leading '#', trim again,
  * collapse internal whitespace, lowercase. Applied to both the dictionary aliases
  * on load and to card tags at match time (so "#Female", "  female ", "FEMALE"
@@ -114,14 +122,26 @@ export function pickCanonical(variants) {
  * excluded from `unassigned`. A tag claimed by both a canonical and the removed
  * list stays with its canonical (mapping is the more specific intent).
  *
+ * Tags whose normalized length exceeds `maxTagLength` (default
+ * DEFAULT_MAX_TAG_LENGTH) are auto-flagged as junk and folded into the same
+ * `removed` bucket as `removedTags` — for cards where an author dumped a
+ * whole sentence into the tag field instead of a keyword. This is a blanket
+ * length check, not a name list: nothing needs to be enumerated up front.
+ * Precedence is the same "explicit beats automatic" rule used elsewhere here
+ * — a tag that's already mapped to a canonical stays with its group even if
+ * it's long; only otherwise-unclaimed long tags get swept into `removed`.
+ * Pass `maxTagLength: 0` (or any falsy value) to disable the check entirely.
+ *
  * @param {object[]} characters
  * @param {Object<string,string[]>} mapping  canonical -> variant strings
  * @param {string[]} [removedTags]  tag strings flagged as junk
+ * @param {{maxTagLength?: number}} [options]  maxTagLength defaults to DEFAULT_MAX_TAG_LENGTH
  * @returns {{groups: Array<{canonical:string, variants:Array<{tag:string,count:number,avatars:string[]}>}>, unassigned: Array<{tag:string,count:number,avatars:string[]}>, removed: Array<{tag:string,count:number,avatars:string[]}>}}
  */
-export function buildBuckets(characters, mapping, removedTags) {
+export function buildBuckets(characters, mapping, removedTags, options) {
     const map = mapping || {};
     const stats = scanTags(characters);
+    const maxTagLength = options?.maxTagLength === undefined ? DEFAULT_MAX_TAG_LENGTH : options.maxTagLength;
 
     // Normalized variant/canonical -> canonical key.
     const lookup = new Map();
@@ -152,6 +172,11 @@ export function buildBuckets(characters, mapping, removedTags) {
         }
     }
 
+    // Auto-flagged-by-length tags, keyed by exact string. Folded into `removed`
+    // below. Nothing is seeded here (unlike removedTags) since there's no
+    // declared list — it's derived purely from length at scan time.
+    const tooLongMap = new Map();
+
     const unassigned = [];
     for (const [tag, entry] of stats) {
         const variant = { tag, count: entry.count, avatars: [...entry.avatars] };
@@ -160,6 +185,8 @@ export function buildBuckets(characters, mapping, removedTags) {
             ensure(canonical).set(tag, variant); // observed string wins over the count-0 seed
         } else if (removedLookup.has(norm(tag))) {
             removedMap.set(tag, variant); // observed string wins over the count-0 seed
+        } else if (maxTagLength && norm(tag).length > maxTagLength) {
+            tooLongMap.set(tag, variant);
         } else {
             unassigned.push(variant);
         }
@@ -173,7 +200,10 @@ export function buildBuckets(characters, mapping, removedTags) {
     return {
         groups,
         unassigned: unassigned.sort(byCount),
-        removed: [...removedMap.values()].sort(byCount),
+        // Explicit junk (removedTags) and auto-flagged over-length tags share
+        // one bucket — the UI only has a single "to be removed" section, so
+        // there's no separate tooLong list to render.
+        removed: [...removedMap.values(), ...tooLongMap.values()].sort(byCount),
     };
 }
 
@@ -182,12 +212,20 @@ export function buildBuckets(characters, mapping, removedTags) {
  * Renames any matched variant to its canonical, deletes any tag in `removedSet`
  * (case-insensitive), preserves unrelated tags and their order, and dedupes
  * case-insensitively.
+ *
+ * If `maxTagLength` is set (0/undefined disables it), any tag whose normalized
+ * length exceeds it is dropped too — unless it's also the target of an approved
+ * row, in which case the explicit rename wins and it's kept. This mirrors the
+ * `tooLong` bucket in buildBuckets but is opt-in here, since applying is
+ * destructive: pass it only once you're satisfied with what a preview showed.
+ *
  * @param {string[]} currentTags
  * @param {Array<{canonical:string, variants:Array<{tag:string}>}>} approvedRows
  * @param {Set<string>} [removedSet]  normalized tags to delete entirely
+ * @param {number} [maxTagLength]  normalized tags longer than this are dropped
  * @returns {string[]|null} new tag array, or null if nothing changed
  */
-export function applyRowsToTags(currentTags, approvedRows, removedSet) {
+export function applyRowsToTags(currentTags, approvedRows, removedSet, maxTagLength) {
     // Map normalized variant -> canonical for every approved row.
     const variantToCanonical = new Map();
     for (const row of approvedRows) {
@@ -209,6 +247,9 @@ export function applyRowsToTags(currentTags, approvedRows, removedSet) {
     for (const tag of currentTags) {
         if (removed.has(norm(tag))) { changed = true; continue; } // junk — drop it
         const canonical = variantToCanonical.get(norm(tag));
+        if (canonical === undefined && maxTagLength && norm(tag).length > maxTagLength) {
+            changed = true; continue; // too long and not rescued by an approved rename — drop it
+        }
         if (canonical === undefined) {
             push(tag);
         } else {
