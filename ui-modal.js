@@ -25,6 +25,7 @@ let categoryOrder = [];         // category names in dictionary order
 let maxTagLength = DEFAULT_MAX_TAG_LENGTH;  // auto-flag cutoff; 0 disables (from panel settings)
 let baseSnapshot = null;        // serialized base dict for dirty-check
 let resetBtnEl = null;
+let standardizeOnApplyEl = null;  // checkbox input: clean unmapped tag spelling on Apply
 let cancelRequested = false;
 let isRunning = false;
 
@@ -51,6 +52,7 @@ function closeModal() {
     overlayEl = null;
     state = null;
     resetBtnEl = null;
+    standardizeOnApplyEl = null;
     isRunning = false;
     cancelRequested = false;
 }
@@ -186,6 +188,14 @@ export function openModal(characters, mapping, removedTags, catCategories = {}, 
     const applyBtn = el(`<div id="ctm-apply" class="menu_button"><i class="fa-solid fa-wand-magic-sparkles"></i>&nbsp;&nbsp;Apply to Cards</div>`);
     applyBtn.addEventListener('click', onApply);
     footer.appendChild(applyBtn);
+    const standardizeToggleWrap = el(`
+        <label class="ctm-standardize-toggle" style="display:inline-flex;align-items:center;gap:4px;margin:0 8px;font-size:0.9em;"
+               title="Trim spaces, strip emoji, and fix simple case on any Unassigned tag. Applied directly to cards when you hit Apply — no dictionary entry needed.">
+            <input type="checkbox" id="ctm-standardize-onapply">Standardize Unassigned
+        </label>
+    `);
+    footer.appendChild(standardizeToggleWrap);
+    standardizeOnApplyEl = standardizeToggleWrap.querySelector('input');
     const newGroupBtn = el(`<div class="menu_button" title="Create an empty canonical tag"><i class="fa-solid fa-plus"></i>&nbsp;&nbsp;New canonical</div>`);
     newGroupBtn.addEventListener('click', onNewEmptyGroup);
     footer.appendChild(newGroupBtn);
@@ -574,6 +584,10 @@ function openChipMenu(anchor, variant, from) {
 
 /**
  * Move a variant between groups / unassigned / removed / a new group, then persist.
+ * A canonical is never left with zero variants by this: moving the last
+ * variant out of a group is blocked outright rather than cleaned up after
+ * the fact (deleting a canonical is a separate, deliberate action — the ✕ on
+ * its row — not an implicit side effect of moving its last tag elsewhere).
  * @param {object} variant
  * @param {object|'unassigned'|'removed'} from  source group or bucket
  * @param {object|'unassigned'|'removed'|'new'} to  destination
@@ -581,6 +595,12 @@ function openChipMenu(anchor, variant, from) {
 function moveVariant(variant, from, to) {
     syncFromDom();
     const fromGroup = typeof from === 'object' ? from : null;
+
+    if (fromGroup && fromGroup.variants.length === 1 && fromGroup.variants[0] === variant) {
+        closeChipMenu();
+        toastr.warning(`Can't remove the last variant from "${fromGroup.canonical}" — delete the canonical itself (✕ on its row) if you want it gone.`, 'Tag Merger');
+        return;
+    }
 
     // Remove from source.
     if (fromGroup) fromGroup.variants = fromGroup.variants.filter(v => v !== variant);
@@ -598,6 +618,8 @@ function moveVariant(variant, from, to) {
         to.variants.push(variant);
     }
 
+    // Defensive fallback only — the guard above should make this unreachable
+    // via this function, but kept in case some other path ever empties a group.
     if (fromGroup && fromGroup.variants.length === 0) {
         state.groups = state.groups.filter(g => g !== fromGroup);
     }
@@ -651,8 +673,9 @@ async function onApply() {
     cancelRequested = false;
     const approved = collectApprovedRows();
     const removedSet = new Set(state.removed.map(v => norm(v.tag)));
+    const standardize = standardizeOnApplyEl?.checked ?? false;
 
-    if (approved.length === 0 && removedSet.size === 0) {
+    if (approved.length === 0 && removedSet.size === 0 && !standardize) {
         toastr.info('Nothing to apply — no renames or removals defined.', 'Tag Merger');
         return;
     }
@@ -661,7 +684,7 @@ async function onApply() {
     for (const char of characterList) {
         const current = getCardTags(char);
         if (current.length === 0) continue;
-        const next = applyRowsToTags(current, approved, removedSet);
+        const next = applyRowsToTags(current, approved, removedSet, undefined, standardize);
         if (next) changeSet.push({ avatar: char.avatar, name: char.name, newTags: next });
     }
 
@@ -673,7 +696,7 @@ async function onApply() {
     // Count removals that actually appear on cards (declared junk with no usage
     // doesn't change anything).
     const removeActive = state.removed.filter(v => v.count > 0).length;
-    const confirmed = await confirmApply(approved.length, removeActive, changeSet.length);
+    const confirmed = await confirmApply(approved.length, removeActive, changeSet.length, standardize);
     if (!confirmed) return;
 
     setRunning(true);
@@ -749,10 +772,11 @@ function confirmDialog({ title, bodyHtml, confirmLabel = 'Confirm', confirmIcon 
     });
 }
 
-function confirmApply(rowCount, removeCount, cardCount) {
+function confirmApply(rowCount, removeCount, cardCount, standardize) {
     const parts = [];
     if (rowCount > 0) parts.push(`<b>${rowCount}</b> canonical mapping${rowCount === 1 ? '' : 's'}`);
     if (removeCount > 0) parts.push(`<b>${removeCount}</b> tag removal${removeCount === 1 ? '' : 's'}`);
+    if (standardize) parts.push(`spelling cleanup on unmapped tags`);
     return confirmDialog({
         title: 'Apply tag changes?',
         bodyHtml: `

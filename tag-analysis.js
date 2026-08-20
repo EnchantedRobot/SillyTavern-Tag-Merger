@@ -109,6 +109,45 @@ export function pickCanonical(variants) {
         .join(' ');
 }
 
+// Common emoji blocks (emoticons, symbols/pictographs, transport, supplemental
+// symbols, dingbats, misc technical, regional-indicator flag letters) plus the
+// variation-selector, ZWJ, and keycap combiners used in emoji sequences. This
+// is not a complete Unicode emoji database — some rare pictographs may slip
+// through — but it covers what people actually paste into tag fields.
+const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\uFE0F\u200D\u20E3]/gu;
+
+/**
+ * Clean up a single tag for display: trim both ends, strip emoji, collapse
+ * whitespace left behind, and title-case each word — "one two" -> "One Two",
+ * "one-two" -> "One-Two", "one" -> "One" (letter runs are capitalized in
+ * place, so any separator — space, hyphen, underscore — is preserved as-is).
+ *
+ * Title-casing only applies when the tag is entirely lowercase. Anything with
+ * an uppercase letter already — all-caps (NSFW) or intentional mixed case
+ * (AnyPOV, SciFi) — is left untouched. Accidental capitalization is rare
+ * compared to plain-lowercase tags needing it, so this only fixes the common
+ * direction rather than guessing at both.
+ *
+ * This is a pure per-tag transform with no cross-tag lookups. Recognizing
+ * that "Female"/"female"/"#FEMALE" are the same tag is a separate, already-
+ * solved problem — norm() below does that; this function only decides what
+ * a single tag should look like once picked.
+ * @param {string} tag
+ * @returns {string}
+ */
+export function standardizeTag(tag) {
+    let s = String(tag)
+        .replace(EMOJI_RE, '')
+        .trim()
+        .replace(/\s+/g, ' ');
+
+    const isAllLower = s === s.toLowerCase();
+    if (isAllLower) {
+        s = s.replace(/[A-Za-z][A-Za-z']*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+    }
+    return s;
+}
+
 /**
  * Turn the cards + the persistent mapping into display buckets.
  *
@@ -219,13 +258,21 @@ export function buildBuckets(characters, mapping, removedTags, options) {
  * `tooLong` bucket in buildBuckets but is opt-in here, since applying is
  * destructive: pass it only once you're satisfied with what a preview showed.
  *
+ * If `standardize` is truthy, any tag that survives the above unchanged —
+ * i.e. not removed, not mapped to a canonical, not dropped for length — gets
+ * run through standardizeTag() directly. No dictionary entry is created or
+ * needed: standardizeTag() is deterministic, so two differently-cased raw
+ * tags on different cards (e.g. "female" and "FEMALE") independently collapse
+ * to the same clean spelling ("Female") without ever being grouped together.
+ *
  * @param {string[]} currentTags
  * @param {Array<{canonical:string, variants:Array<{tag:string}>}>} approvedRows
  * @param {Set<string>} [removedSet]  normalized tags to delete entirely
  * @param {number} [maxTagLength]  normalized tags longer than this are dropped
+ * @param {boolean} [standardize]  clean spelling of any tag left untouched by the above
  * @returns {string[]|null} new tag array, or null if nothing changed
  */
-export function applyRowsToTags(currentTags, approvedRows, removedSet, maxTagLength) {
+export function applyRowsToTags(currentTags, approvedRows, removedSet, maxTagLength, standardize) {
     // Map normalized variant -> canonical for every approved row.
     const variantToCanonical = new Map();
     for (const row of approvedRows) {
@@ -246,16 +293,24 @@ export function applyRowsToTags(currentTags, approvedRows, removedSet, maxTagLen
 
     for (const tag of currentTags) {
         if (removed.has(norm(tag))) { changed = true; continue; } // junk — drop it
+
         const canonical = variantToCanonical.get(norm(tag));
-        if (canonical === undefined && maxTagLength && norm(tag).length > maxTagLength) {
-            changed = true; continue; // too long and not rescued by an approved rename — drop it
-        }
-        if (canonical === undefined) {
-            push(tag);
-        } else {
+        if (canonical !== undefined) {
             if (canonical !== tag) changed = true;
             push(canonical);
+            continue;
         }
+
+        if (maxTagLength && norm(tag).length > maxTagLength) {
+            changed = true; continue; // too long and not rescued by an approved rename — drop it
+        }
+
+        if (standardize) {
+            const clean = standardizeTag(tag);
+            if (clean !== tag) { changed = true; push(clean); continue; }
+        }
+
+        push(tag);
     }
     return changed ? result : null;
 }
