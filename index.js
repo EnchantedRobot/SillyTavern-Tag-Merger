@@ -226,11 +226,11 @@ function buildPanel() {
                     <input type="number" id="ctm-autodelete-maxlength" class="text_pole" min="1" step="1" style="width:4em;" value="${s.autoDeleteMaxLength}">
                     characters
                 </label>
+                <p class="ctm-panel-desc" style="margin-top:4px;">Occasional maintenance for the dictionary itself, not your cards — worth a look if you've been merging tags into it for a while. Asks for confirmation first since it edits variant spelling in place.</p>
                 <div id="ctm-cleanup" class="menu_button" style="width:100%; text-align:center; margin-top:4px;"
                      title="Rewrites each canonical's variant spelling (trim, strip emoji, drop a leading #, fix simple case) and drops any resulting duplicates. Prunes Removed entries already covered by the length cutoff. Never renames or merges canonicals, and never touches a card — only your saved dictionary.">
                     <i class="fa-solid fa-broom"></i>&nbsp;&nbsp;Dictionary Cleanup
                 </div>
-                <p class="ctm-panel-desc" style="margin-top:4px;">Occasional maintenance for the dictionary itself, not your cards — worth a look if you've been merging tags into it for a while. Asks for confirmation first since it edits variant spelling in place.</p>
             </div>
         </div>
     `;
