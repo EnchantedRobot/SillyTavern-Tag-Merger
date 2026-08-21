@@ -31,6 +31,7 @@ let isRunning = false;
 let bucketFilter = { unassigned: '', removed: '' };
 let selectionBucket = null;     // 'unassigned' | 'removed' | null
 let selected = new Set();       // Set of variant objects
+let hideOneOffs = false;        // Unassigned only: hide tags used on just one card
 
 function el(html) {
     const t = document.createElement('template');
@@ -156,6 +157,7 @@ export function openModal(characters, mapping, removedTags, catCategories = {}, 
     bucketFilter = { unassigned: '', removed: '' };
     selectionBucket = null;
     selected = new Set();
+    hideOneOffs = false;
 
     loadState(baseMapping, baseRemovedTags);
     baseSnapshot = currentSnapshot();
@@ -353,23 +355,41 @@ function refreshBucket(kind) {
 function buildBucket(kind) {
     const meta = BUCKET_META[kind];
     const arr = bucketArr(kind);
-    const visible = kind === 'removed' ? arr.filter(v => v.count > 0) : arr;
+    let visible = kind === 'removed' ? arr.filter(v => v.count > 0) : arr;
+    const totalBeforeOneOffs = visible.length;
+    if (kind === 'unassigned' && hideOneOffs) visible = visible.filter(v => v.count > 1);
+
     const wrap = el(`<div class="ctm-excluded ${meta.cls}"></div>`);
     const inSelection = selectionBucket === kind;
+
+    const oneOffsToggleHtml = kind === 'unassigned' ? `
+        <label class="ctm-oneoffs-toggle" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:0.85em;font-weight:normal;"
+               title="Hide tags that only appear on one card — handy for focusing on the tags worth organizing first.">
+            <input type="checkbox" class="ctm-hide-oneoffs"${hideOneOffs ? ' checked' : ''}>Hide one-offs
+        </label>` : '';
 
     const headerRow = el(`<div class="ctm-excluded-header-row">
         <span class="ctm-excluded-header">${meta.header(visible.length)}</span>
         ${visible.length > 0 ? `<span class="ctm-link ctm-excluded-toggle">${inSelection ? 'Cancel' : 'Select'}</span>` : ''}
+        ${oneOffsToggleHtml}
     </div>`);
     headerRow.querySelector('.ctm-excluded-toggle')?.addEventListener('click', () => {
         selectionBucket = inSelection ? null : kind;
         selected.clear();
         renderBody();
     });
+    headerRow.querySelector('.ctm-hide-oneoffs')?.addEventListener('change', (e) => {
+        hideOneOffs = e.target.checked;
+        renderBody(); // full rebuild keeps the summary/header counts in sync too
+    });
     wrap.appendChild(headerRow);
 
     if (visible.length === 0) {
-        wrap.appendChild(el(`<div class="ctm-excluded-empty">${meta.empty}</div>`));
+        const filteredToEmpty = kind === 'unassigned' && hideOneOffs && totalBeforeOneOffs > 0;
+        const msg = filteredToEmpty
+            ? 'Every remaining tag here only appears on one card — uncheck "Hide one-offs" to see them.'
+            : meta.empty;
+        wrap.appendChild(el(`<div class="ctm-excluded-empty">${msg}</div>`));
         return wrap;
     }
 
