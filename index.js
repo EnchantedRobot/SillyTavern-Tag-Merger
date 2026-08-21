@@ -84,11 +84,6 @@ export function saveAutoDeleteSettings(enabled, maxLength) {
  * themselves, so the dry run is what you actually get to review.
  */
 
-// Cap on preview lines per section in the confirmation dialog, so a huge
-// dictionary can't turn it into an unreadable wall of text. The applied
-// change is never capped — only what's shown before you confirm it.
-const CLEANUP_PREVIEW_LIMIT = 8;
-
 /**
  * Themed confirmation for Dictionary Cleanup, styled off the same
  * ctm-overlay/ctm-modal chrome the mapping editor uses (SillyTavern
@@ -120,20 +115,20 @@ function confirmCleanup(canonicalPlans, prunedRemovedTags, dupeReport) {
         `);
         const body = overlay.querySelector('.ctm-cleanup-body');
 
+        // Each section's rows live in their own scrollable framed list, so
+        // a long dictionary scrolls in its own little pane instead of
+        // truncating with a "…and N more".
         const addSection = (titleHtml) => {
             const section = el(`<div class="ctm-cleanup-section"><div class="ctm-cleanup-section-title">${titleHtml}</div></div>`);
+            const list = el(`<div class="ctm-cleanup-list"></div>`);
+            section.appendChild(list);
             body.appendChild(section);
-            return section;
-        };
-        const addMore = (section, remaining) => {
-            const more = el(`<div class="ctm-cleanup-more"></div>`);
-            more.textContent = `…and ${remaining} more`;
-            section.appendChild(more);
+            return list;
         };
 
         if (canonicalPlans.length > 0) {
-            const section = addSection(`Variant spelling — ${canonicalPlans.length} canonical${canonicalPlans.length === 1 ? '' : 's'}`);
-            for (const { canonical, renames, dropped } of canonicalPlans.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+            const list = addSection(`Variant spelling — ${canonicalPlans.length} canonical${canonicalPlans.length === 1 ? '' : 's'}`);
+            for (const { canonical, renames, dropped } of canonicalPlans) {
                 const row = el(`<div class="ctm-cleanup-row"><span class="ctm-cleanup-canonical"></span><span class="ctm-cleanup-diff"></span></div>`);
                 row.querySelector('.ctm-cleanup-canonical').textContent = canonical;
                 const diffEl = row.querySelector('.ctm-cleanup-diff');
@@ -152,29 +147,26 @@ function confirmCleanup(canonicalPlans, prunedRemovedTags, dupeReport) {
                     note.textContent = ` [${dropped} dropped as duplicate${dropped === 1 ? '' : 's'}]`;
                     diffEl.appendChild(note);
                 }
-                section.appendChild(row);
+                list.appendChild(row);
             }
-            if (canonicalPlans.length > CLEANUP_PREVIEW_LIMIT) addMore(section, canonicalPlans.length - CLEANUP_PREVIEW_LIMIT);
         }
 
         if (prunedRemovedTags.length > 0) {
-            const section = addSection(`Removed-tag entries pruned <span class="ctm-hint">(already covered by length removal)</span>`);
-            for (const t of prunedRemovedTags.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+            const list = addSection(`Removed-tag entries pruned <span class="ctm-hint">(already covered by length removal)</span>`);
+            for (const t of prunedRemovedTags) {
                 const row = el(`<div class="ctm-cleanup-row"><del></del></div>`);
                 row.querySelector('del').textContent = t;
-                section.appendChild(row);
+                list.appendChild(row);
             }
-            if (prunedRemovedTags.length > CLEANUP_PREVIEW_LIMIT) addMore(section, prunedRemovedTags.length - CLEANUP_PREVIEW_LIMIT);
         }
 
         if (dupeReport.length > 0) {
-            const section = addSection(`Possible duplicate canonicals <span class="ctm-hint">(reported only, not merged)</span>`);
-            for (const d of dupeReport.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+            const list = addSection(`Possible duplicate canonicals <span class="ctm-hint">(reported only, not merged)</span>`);
+            for (const d of dupeReport) {
                 const row = el(`<div class="ctm-cleanup-row"></div>`);
                 row.textContent = d;
-                section.appendChild(row);
+                list.appendChild(row);
             }
-            if (dupeReport.length > CLEANUP_PREVIEW_LIMIT) addMore(section, dupeReport.length - CLEANUP_PREVIEW_LIMIT);
         }
 
         body.appendChild(el(`<p class="ctm-panel-desc ctm-cleanup-scope">This only touches your saved dictionary — it never opens or edits a card file, and canonicals themselves are never renamed or merged.</p>`));
