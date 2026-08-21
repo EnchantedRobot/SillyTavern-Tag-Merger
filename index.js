@@ -10,6 +10,12 @@ import { norm, standardizeTag, DEFAULT_MAX_TAG_LENGTH } from './tag-analysis.js'
 const PANEL_ID = 'ctm-panel';
 export const EXT_KEY = 'CharacterTagMerger';
 
+function el(html) {
+    const t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return t.content.firstElementChild;
+}
+
 /**
  * Return the extension's persisted settings, initialising defaults on first
  * access. The mapping ({ canonical: [variant…] }) is the source of truth.
@@ -83,7 +89,105 @@ export function saveAutoDeleteSettings(enabled, maxLength) {
 // change is never capped — only what's shown before you confirm it.
 const CLEANUP_PREVIEW_LIMIT = 8;
 
-function cleanupDictionary() {
+/**
+ * Themed confirmation for Dictionary Cleanup, styled off the same
+ * ctm-overlay/ctm-modal chrome the mapping editor uses (SillyTavern
+ * theme vars, so it follows the active theme) rather than a plain
+ * browser confirm(). Each rename is shown as an actual diff — struck-
+ * through old spelling, clean new spelling — instead of prose.
+ *
+ * All dynamic text (tag/canonical names) is inserted via textContent,
+ * never interpolated into HTML, since it comes from card authors and
+ * can't be trusted as markup.
+ *
+ * @returns {Promise<boolean>} resolves true if the user confirmed
+ */
+function confirmCleanup(canonicalPlans, prunedRemovedTags, dupeReport) {
+    return new Promise(resolve => {
+        const overlay = el(`
+            <div class="ctm-overlay ctm-cleanup-overlay">
+                <div class="ctm-modal ctm-cleanup-modal">
+                    <div class="ctm-header">
+                        <h3><i class="fa-solid fa-broom"></i> Dictionary Cleanup — preview</h3>
+                    </div>
+                    <div class="ctm-body ctm-cleanup-body"></div>
+                    <div class="ctm-footer ctm-cleanup-footer">
+                        <div class="menu_button ctm-cleanup-yes"><i class="fa-solid fa-broom"></i>&nbsp;&nbsp;Clean Up</div>
+                        <div class="menu_button ctm-btn-cancel ctm-cleanup-no"><i class="fa-solid fa-xmark"></i>&nbsp;&nbsp;Cancel</div>
+                    </div>
+                </div>
+            </div>
+        `);
+        const body = overlay.querySelector('.ctm-cleanup-body');
+
+        const addSection = (titleHtml) => {
+            const section = el(`<div class="ctm-cleanup-section"><div class="ctm-cleanup-section-title">${titleHtml}</div></div>`);
+            body.appendChild(section);
+            return section;
+        };
+        const addMore = (section, remaining) => {
+            const more = el(`<div class="ctm-cleanup-more"></div>`);
+            more.textContent = `…and ${remaining} more`;
+            section.appendChild(more);
+        };
+
+        if (canonicalPlans.length > 0) {
+            const section = addSection(`Variant spelling — ${canonicalPlans.length} canonical${canonicalPlans.length === 1 ? '' : 's'}`);
+            for (const { canonical, renames, dropped } of canonicalPlans.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+                const row = el(`<div class="ctm-cleanup-row"><span class="ctm-cleanup-canonical"></span><span class="ctm-cleanup-diff"></span></div>`);
+                row.querySelector('.ctm-cleanup-canonical').textContent = canonical;
+                const diffEl = row.querySelector('.ctm-cleanup-diff');
+                renames.forEach((r, i) => {
+                    if (i > 0) diffEl.appendChild(document.createTextNode(', '));
+                    const del = document.createElement('del');
+                    del.textContent = r.from;
+                    const ins = document.createElement('ins');
+                    ins.textContent = r.to;
+                    diffEl.append(del, ' ', ins);
+                });
+                if (renames.length === 0) diffEl.appendChild(document.createTextNode('(dedupe only)'));
+                if (dropped > 0) {
+                    const note = document.createElement('span');
+                    note.className = 'ctm-cleanup-note';
+                    note.textContent = ` [${dropped} dropped as duplicate${dropped === 1 ? '' : 's'}]`;
+                    diffEl.appendChild(note);
+                }
+                section.appendChild(row);
+            }
+            if (canonicalPlans.length > CLEANUP_PREVIEW_LIMIT) addMore(section, canonicalPlans.length - CLEANUP_PREVIEW_LIMIT);
+        }
+
+        if (prunedRemovedTags.length > 0) {
+            const section = addSection(`Removed-tag entries pruned <span class="ctm-hint">(already covered by length removal)</span>`);
+            for (const t of prunedRemovedTags.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+                const row = el(`<div class="ctm-cleanup-row"><del></del></div>`);
+                row.querySelector('del').textContent = t;
+                section.appendChild(row);
+            }
+            if (prunedRemovedTags.length > CLEANUP_PREVIEW_LIMIT) addMore(section, prunedRemovedTags.length - CLEANUP_PREVIEW_LIMIT);
+        }
+
+        if (dupeReport.length > 0) {
+            const section = addSection(`Possible duplicate canonicals <span class="ctm-hint">(reported only, not merged)</span>`);
+            for (const d of dupeReport.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+                const row = el(`<div class="ctm-cleanup-row"></div>`);
+                row.textContent = d;
+                section.appendChild(row);
+            }
+            if (dupeReport.length > CLEANUP_PREVIEW_LIMIT) addMore(section, dupeReport.length - CLEANUP_PREVIEW_LIMIT);
+        }
+
+        body.appendChild(el(`<p class="ctm-panel-desc ctm-cleanup-scope">This only touches your saved dictionary — it never opens or edits a card file, and canonicals themselves are never renamed or merged.</p>`));
+
+        const finish = (result) => { overlay.remove(); resolve(result); };
+        overlay.querySelector('.ctm-cleanup-yes').addEventListener('click', () => finish(true));
+        overlay.querySelector('.ctm-cleanup-no').addEventListener('click', () => finish(false));
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) finish(false); });
+        document.body.appendChild(overlay);
+    });
+}
+
+async function cleanupDictionary() {
     const s = getExtSettings();
 
     // Dry run: work out exactly what would change without touching settings
@@ -126,36 +230,8 @@ function cleanupDictionary() {
         return;
     }
 
-    // Build the preview shown in the confirmation, capped per section.
-    const lines = [];
-    if (canonicalPlans.length > 0) {
-        lines.push(`Variant spelling — ${canonicalPlans.length} canonical${canonicalPlans.length === 1 ? '' : 's'}:`);
-        for (const { canonical, renames, dropped } of canonicalPlans.slice(0, CLEANUP_PREVIEW_LIMIT)) {
-            const renameText = renames.length > 0 ? renames.map(r => `"${r.from}"→"${r.to}"`).join(', ') : '(dedupe only)';
-            const droppedText = dropped > 0 ? ` [${dropped} dropped as duplicate${dropped === 1 ? '' : 's'}]` : '';
-            lines.push(`  "${canonical}": ${renameText}${droppedText}`);
-        }
-        if (canonicalPlans.length > CLEANUP_PREVIEW_LIMIT) lines.push(`  …and ${canonicalPlans.length - CLEANUP_PREVIEW_LIMIT} more`);
-    }
-    if (prunedRemovedTags.length > 0) {
-        lines.push(`Removed-tag entries pruned (already covered by length removal):`);
-        for (const t of prunedRemovedTags.slice(0, CLEANUP_PREVIEW_LIMIT)) lines.push(`  "${t}"`);
-        if (prunedRemovedTags.length > CLEANUP_PREVIEW_LIMIT) lines.push(`  …and ${prunedRemovedTags.length - CLEANUP_PREVIEW_LIMIT} more`);
-    }
-    if (dupeReport.length > 0) {
-        lines.push(`Possible duplicate canonicals (reported only, not merged):`);
-        for (const d of dupeReport.slice(0, CLEANUP_PREVIEW_LIMIT)) lines.push(`  ${d}`);
-        if (dupeReport.length > CLEANUP_PREVIEW_LIMIT) lines.push(`  …and ${dupeReport.length - CLEANUP_PREVIEW_LIMIT} more`);
-    }
-
-    const warned = confirm(
-        'Dictionary Cleanup — preview:\n\n'
-        + lines.join('\n')
-        + '\n\nThis only touches your saved dictionary — it never opens or edits a card file, '
-        + 'and canonicals themselves are never renamed or merged.'
-        + '\n\nContinue?'
-    );
-    if (!warned) return;
+    const confirmed = await confirmCleanup(canonicalPlans, prunedRemovedTags, dupeReport);
+    if (!confirmed) return;
 
     // Apply exactly the plan just previewed — nothing recomputed here.
     let variantsRemoved = 0;

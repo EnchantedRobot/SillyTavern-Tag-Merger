@@ -337,6 +337,34 @@ details[open] > .ctm-category-header::before { transform: rotate(90deg); }
 .ctm-progress-track { background: rgba(255, 255, 255, 0.1); border-radius: 3px; height: 6px; overflow: hidden; }
 .ctm-progress-bar { height: 100%; width: 0%; background: var(--SmartThemeQuoteColor, #4a9eff); transition: width 0.3s ease; }
 
+/* ── Dictionary Cleanup preview ───────────────────────────────────
+   Standalone overlay (not nested in the mapping-editor modal — the panel
+   button lives outside it), reusing .ctm-overlay/.ctm-modal chrome so it
+   still follows the active SillyTavern theme. */
+.ctm-cleanup-modal { width: min(640px, 92vw); max-height: 80vh; }
+.ctm-cleanup-footer { justify-content: flex-end; }
+
+.ctm-cleanup-section { margin-bottom: 14px; }
+.ctm-cleanup-section:last-child { margin-bottom: 0; }
+.ctm-cleanup-section-title { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+
+.ctm-cleanup-row { font-size: 12.5px; line-height: 1.6; padding: 2px 0; }
+.ctm-cleanup-canonical { font-weight: 600; margin-right: 6px; }
+.ctm-cleanup-diff del,
+.ctm-cleanup-row del {
+    color: #e57373;
+    text-decoration: line-through;
+    opacity: 0.85;
+}
+.ctm-cleanup-diff ins {
+    color: #81c784;
+    text-decoration: none;
+    font-weight: 600;
+}
+.ctm-cleanup-note { color: #64b5f6; font-size: 0.9em; }
+.ctm-cleanup-more { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+.ctm-cleanup-scope { margin: 10px 0 0 0; }
+
 /* ── Confirm sub-overlay ───────────────────────────────────────── */
 .ctm-confirm {
     position: absolute;
