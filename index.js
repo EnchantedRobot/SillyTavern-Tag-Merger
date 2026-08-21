@@ -52,31 +52,6 @@ export function saveAutoDeleteSettings(enabled, maxLength) {
 
 /**
  * Dictionary-only maintenance. Doesn't need any characters loaded and doesn't
- * open the mapping editor — it just tidies the persisted settings directly,
- * so it lives here next to the launcher rather than in the modal.
- *
- * 1. Merge canonicals that are case/whitespace duplicates of each other
- *    (norm(canonical) collisions, e.g. a stray "female" entry next to
- *    "Female"). Not just cosmetic clutter: the dictionary's match lookup is
- *    keyed by norm(canonical), so two canonicals sharing that key silently
- *    fight over which one receives future matches — most likely created by
- *    "New canonical from this tag" on two differently-cased chips at
- *    different times. This is almost certainly what you'd spot as
- *    near-duplicate capitalization sitting in settings.json.
- * 2. Clean the surviving canonicals' spelling via standardizeTag(). Safe to
- *    do *after* step 1 specifically because norm() lowercases: title-casing
- *    can't change a canonical's norm() key, so this can't create a new
- *    collision that step 1 didn't already catch.
- * 3. Drop any removedTags entry whose normalized length already exceeds
- *    DEFAULT_MAX_TAG_LENGTH. Those get swept into the Removed bucket
- *    automatically by the length check in buildBuckets/applyRowsToTags
- *    regardless of whether they're explicitly listed, so keeping them here
- *    too is redundant — this just prunes settings.json back down.
- *
- * Only ever touches the persisted dictionary — never opens a card file.
- */
-/**
- * Dictionary-only maintenance. Doesn't need any characters loaded and doesn't
  * open the mapping editor — it just tidies the persisted settings directly.
  *
  * Canonicals (the object keys) are NEVER renamed or merged here — that's
@@ -89,20 +64,46 @@ export function saveAutoDeleteSettings(enabled, maxLength) {
  *
  * What this DOES change:
  *   1. Cleans and dedupes each canonical's own variant list in place (trims
- *      spaces, strips emoji, fixes simple case via standardizeTag() — same
- *      as the checkbox in the mapping editor's Apply flow). This only
- *      touches the array *under* a canonical, never the canonical's name.
- *      Case-different variants that clean to the same spelling collapse
- *      into one entry, same as any other exact duplicate.
+ *      spaces, strips emoji, drops a leading #, fixes simple case via
+ *      standardizeTag() — same as the checkbox in the mapping editor's Apply
+ *      flow). This only touches the array *under* a canonical, never the
+ *      canonical's name. Case-different variants that clean to the same
+ *      spelling collapse into one entry, same as any other exact duplicate.
  *   2. Drops any removedTags entry whose normalized length already exceeds
  *      DEFAULT_MAX_TAG_LENGTH, since those get swept into Removed
  *      automatically regardless of whether they're listed explicitly.
+ *
+ * Runs after a confirmation, since step 1 rewrites dictionary entries in
+ * place and there's no undo for that beyond re-editing by hand.
  */
 function cleanupDictionary() {
     const s = getExtSettings();
+
+    // Flag canonicals that normalize to the same key, up front, so the
+    // confirmation can warn about them before anything is touched.
+    const byKey = new Map();
+    for (const canonical of Object.keys(s.mapping)) {
+        const key = norm(canonical);
+        if (!byKey.has(key)) byKey.set(key, []);
+        byKey.get(key).push(canonical);
+    }
+    const dupeReport = [];
+    for (const names of byKey.values()) {
+        if (names.length > 1) dupeReport.push(names.map(n => `"${n}"`).join(' / '));
+    }
+
+    const warned = confirm(
+        'Dictionary Cleanup will rewrite variant spelling in place across your whole dictionary '
+        + '(trim spaces, strip emoji, drop a leading #, fix simple case) and drop exact duplicates '
+        + 'that result.\n\nThis only touches your saved dictionary — it never opens or edits a card '
+        + 'file, and canonicals themselves are never renamed or merged.'
+        + (dupeReport.length > 0 ? `\n\n${dupeReport.length} possible duplicate canonical name${dupeReport.length === 1 ? '' : 's'} will be reported to the console for you to merge by hand.` : '')
+        + '\n\nContinue?'
+    );
+    if (!warned) return;
+
     let canonicalsTouched = 0;
     let variantsRemoved = 0; // collapsed into an existing entry after cleaning
-    const dupeReport = [];
 
     // 1) Clean + dedupe each canonical's own variant list. Never touches the
     // canonical's name (the object key) or any other canonical's data.
@@ -122,18 +123,6 @@ function cleanupDictionary() {
             variantsRemoved += variants.length - cleaned.length;
             s.mapping[canonical] = cleaned;
         }
-    }
-
-    // Report-only: flag canonicals that normalize to the same key. Never
-    // merged — see the note above.
-    const byKey = new Map();
-    for (const canonical of Object.keys(s.mapping)) {
-        const key = norm(canonical);
-        if (!byKey.has(key)) byKey.set(key, []);
-        byKey.get(key).push(canonical);
-    }
-    for (const names of byKey.values()) {
-        if (names.length > 1) dupeReport.push(names.map(n => `"${n}"`).join(' / '));
     }
 
     // 2) Prune removedTags entries already covered by the length auto-removal.
@@ -238,9 +227,10 @@ function buildPanel() {
                     characters
                 </label>
                 <div id="ctm-cleanup" class="menu_button" style="width:100%; text-align:center; margin-top:4px;"
-                     title="Cleans and dedupes each canonical's variant list, and prunes Removed entries already covered by the length cutoff. Never renames or merges canonicals, and never touches any card.">
+                     title="Rewrites each canonical's variant spelling (trim, strip emoji, drop a leading #, fix simple case) and drops any resulting duplicates. Prunes Removed entries already covered by the length cutoff. Never renames or merges canonicals, and never touches a card — only your saved dictionary.">
                     <i class="fa-solid fa-broom"></i>&nbsp;&nbsp;Dictionary Cleanup
                 </div>
+                <p class="ctm-panel-desc" style="margin-top:4px;">Occasional maintenance for the dictionary itself, not your cards — worth a look if you've been merging tags into it for a while. Asks for confirmation first since it edits variant spelling in place.</p>
             </div>
         </div>
     `;

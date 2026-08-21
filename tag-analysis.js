@@ -117,10 +117,12 @@ export function pickCanonical(variants) {
 const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2B00}-\u{2BFF}\u{2300}-\u{23FF}\uFE0F\u200D\u20E3]/gu;
 
 /**
- * Clean up a single tag for display: trim both ends, strip emoji, collapse
- * whitespace left behind, and title-case each word — "one two" -> "One Two",
- * "one-two" -> "One-Two", "one" -> "One" (letter runs are capitalized in
- * place, so any separator — space, hyphen, underscore — is preserved as-is).
+ * Clean up a single tag for display: trim both ends, strip emoji, drop a
+ * leading `#` (however many), collapse whitespace left behind, and title-case
+ * each word — "one two" -> "One Two", "one-two" -> "One-Two", "one" -> "One"
+ * (letter runs are capitalized in place, so any separator — space, hyphen,
+ * underscore — is preserved as-is). "#female" -> "Female", same as a bare
+ * "female" would become.
  *
  * Title-casing only applies when the tag is entirely lowercase. Anything with
  * an uppercase letter already — all-caps (NSFW) or intentional mixed case
@@ -138,6 +140,8 @@ const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1
 export function standardizeTag(tag) {
     let s = String(tag)
         .replace(EMOJI_RE, '')
+        .trim()
+        .replace(/^#+/, '')
         .trim()
         .replace(/\s+/g, ' ');
 
