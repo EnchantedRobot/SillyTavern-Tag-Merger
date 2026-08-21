@@ -119,6 +119,7 @@ function buildPanel() {
                 <div id="ctm-open" class="menu_button" style="width:100%; text-align:center;">
                     <i class="fa-solid fa-tags"></i>&nbsp;&nbsp;Edit Tag Mapping
                 </div>
+                <p class="ctm-panel-desc" style="margin-top:4px;">Flagged tags land in the Removed bucket of the mapping editor — nothing is deleted from a card until you hit Apply there.</p>
                 <label class="ctm-autodelete-toggle" style="display:flex;align-items:center;gap:6px;margin:10px 0 0 0;font-size:0.9em;"
                        title="Some card authors dump a full sentence into the tag list instead of a keyword. When this is on, any tag longer than the limit below is flagged for removal automatically — no need to name the offender yourself.">
                     <input type="checkbox" id="ctm-autodelete-enabled"${s.autoDeleteEnabled ? ' checked' : ''}>
@@ -126,7 +127,6 @@ function buildPanel() {
                     <input type="number" id="ctm-autodelete-maxlength" class="text_pole" min="1" step="1" style="width:4em;" value="${s.autoDeleteMaxLength}">
                     characters
                 </label>
-                <p class="ctm-panel-desc" style="margin-top:4px;">Flagged tags land in the Removed bucket of the mapping editor — nothing is deleted from a card until you hit Apply there.</p>
             </div>
         </div>
     `;
