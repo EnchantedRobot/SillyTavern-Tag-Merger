@@ -73,14 +73,43 @@ export function saveAutoDeleteSettings(enabled, maxLength) {
  *      DEFAULT_MAX_TAG_LENGTH, since those get swept into Removed
  *      automatically regardless of whether they're listed explicitly.
  *
- * Runs after a confirmation, since step 1 rewrites dictionary entries in
- * place and there's no undo for that beyond re-editing by hand.
+ * Runs after a confirmation that previews the exact changes below — the
+ * whole thing takes well under a second, too fast to eyeball on the cards
+ * themselves, so the dry run is what you actually get to review.
  */
+
+// Cap on preview lines per section in the confirmation dialog, so a huge
+// dictionary can't turn it into an unreadable wall of text. The applied
+// change is never capped — only what's shown before you confirm it.
+const CLEANUP_PREVIEW_LIMIT = 8;
+
 function cleanupDictionary() {
     const s = getExtSettings();
 
-    // Flag canonicals that normalize to the same key, up front, so the
-    // confirmation can warn about them before anything is touched.
+    // Dry run: work out exactly what would change without touching settings
+    // yet, so the confirmation can show the real thing instead of a guess.
+    const canonicalPlans = []; // { canonical, cleaned, renames: [{from,to}], dropped }
+    for (const canonical of Object.keys(s.mapping)) {
+        const variants = s.mapping[canonical] ?? [];
+        const seen = new Set();
+        const cleaned = [];
+        const renames = [];
+        let dropped = 0;
+        for (const v of variants) {
+            const clean = standardizeTag(v);
+            if (clean !== v) renames.push({ from: v, to: clean });
+            if (seen.has(clean)) { dropped++; continue; } // same spelling after cleaning — drop the dupe
+            seen.add(clean);
+            cleaned.push(clean);
+        }
+        const changed = cleaned.length !== variants.length || cleaned.some((v, i) => v !== variants[i]);
+        if (changed) canonicalPlans.push({ canonical, cleaned, renames, dropped });
+    }
+
+    const prunedRemovedTags = s.removedTags.filter(t => norm(t).length > DEFAULT_MAX_TAG_LENGTH);
+
+    // Flag canonicals that normalize to the same key. Report-only, never
+    // merged — see the note above.
     const byKey = new Map();
     for (const canonical of Object.keys(s.mapping)) {
         const key = norm(canonical);
@@ -92,58 +121,59 @@ function cleanupDictionary() {
         if (names.length > 1) dupeReport.push(names.map(n => `"${n}"`).join(' / '));
     }
 
+    if (canonicalPlans.length === 0 && prunedRemovedTags.length === 0 && dupeReport.length === 0) {
+        toastr.info('Nothing to clean up — dictionary is already tidy.', 'Tag Merger');
+        return;
+    }
+
+    // Build the preview shown in the confirmation, capped per section.
+    const lines = [];
+    if (canonicalPlans.length > 0) {
+        lines.push(`Variant spelling — ${canonicalPlans.length} canonical${canonicalPlans.length === 1 ? '' : 's'}:`);
+        for (const { canonical, renames, dropped } of canonicalPlans.slice(0, CLEANUP_PREVIEW_LIMIT)) {
+            const renameText = renames.length > 0 ? renames.map(r => `"${r.from}"→"${r.to}"`).join(', ') : '(dedupe only)';
+            const droppedText = dropped > 0 ? ` [${dropped} dropped as duplicate${dropped === 1 ? '' : 's'}]` : '';
+            lines.push(`  "${canonical}": ${renameText}${droppedText}`);
+        }
+        if (canonicalPlans.length > CLEANUP_PREVIEW_LIMIT) lines.push(`  …and ${canonicalPlans.length - CLEANUP_PREVIEW_LIMIT} more`);
+    }
+    if (prunedRemovedTags.length > 0) {
+        lines.push(`Removed-tag entries pruned (already covered by length removal):`);
+        for (const t of prunedRemovedTags.slice(0, CLEANUP_PREVIEW_LIMIT)) lines.push(`  "${t}"`);
+        if (prunedRemovedTags.length > CLEANUP_PREVIEW_LIMIT) lines.push(`  …and ${prunedRemovedTags.length - CLEANUP_PREVIEW_LIMIT} more`);
+    }
+    if (dupeReport.length > 0) {
+        lines.push(`Possible duplicate canonicals (reported only, not merged):`);
+        for (const d of dupeReport.slice(0, CLEANUP_PREVIEW_LIMIT)) lines.push(`  ${d}`);
+        if (dupeReport.length > CLEANUP_PREVIEW_LIMIT) lines.push(`  …and ${dupeReport.length - CLEANUP_PREVIEW_LIMIT} more`);
+    }
+
     const warned = confirm(
-        'Dictionary Cleanup will rewrite variant spelling in place across your whole dictionary '
-        + '(trim spaces, strip emoji, drop a leading #, fix simple case) and drop exact duplicates '
-        + 'that result.\n\nThis only touches your saved dictionary — it never opens or edits a card '
-        + 'file, and canonicals themselves are never renamed or merged.'
-        + (dupeReport.length > 0 ? `\n\n${dupeReport.length} possible duplicate canonical name${dupeReport.length === 1 ? '' : 's'} will be reported to the console for you to merge by hand.` : '')
+        'Dictionary Cleanup — preview:\n\n'
+        + lines.join('\n')
+        + '\n\nThis only touches your saved dictionary — it never opens or edits a card file, '
+        + 'and canonicals themselves are never renamed or merged.'
         + '\n\nContinue?'
     );
     if (!warned) return;
 
-    let canonicalsTouched = 0;
-    let variantsRemoved = 0; // collapsed into an existing entry after cleaning
-
-    // 1) Clean + dedupe each canonical's own variant list. Never touches the
-    // canonical's name (the object key) or any other canonical's data.
-    for (const canonical of Object.keys(s.mapping)) {
-        const variants = s.mapping[canonical] ?? [];
-        const seen = new Set();
-        const cleaned = [];
-        for (const v of variants) {
-            const clean = standardizeTag(v);
-            if (seen.has(clean)) continue; // same spelling after cleaning — drop the dupe
-            seen.add(clean);
-            cleaned.push(clean);
-        }
-        const changed = cleaned.length !== variants.length || cleaned.some((v, i) => v !== variants[i]);
-        if (changed) {
-            canonicalsTouched++;
-            variantsRemoved += variants.length - cleaned.length;
-            s.mapping[canonical] = cleaned;
-        }
+    // Apply exactly the plan just previewed — nothing recomputed here.
+    let variantsRemoved = 0;
+    for (const { canonical, cleaned, dropped } of canonicalPlans) {
+        variantsRemoved += dropped;
+        s.mapping[canonical] = cleaned;
     }
-
-    // 2) Prune removedTags entries already covered by the length auto-removal.
-    const before = s.removedTags.length;
     s.removedTags = s.removedTags.filter(t => norm(t).length <= DEFAULT_MAX_TAG_LENGTH);
-    const removedTagsPruned = before - s.removedTags.length;
-
-    if (canonicalsTouched === 0 && removedTagsPruned === 0 && dupeReport.length === 0) {
-        toastr.info('Nothing to clean up — dictionary is already tidy.', 'Tag Merger');
-        return;
-    }
 
     SillyTavern.getContext().saveSettingsDebounced?.();
 
     if (dupeReport.length > 0) console.log('[Tag Merger] possible duplicate canonicals (not merged — review and merge by hand):', dupeReport);
 
     const parts = [];
-    if (canonicalsTouched > 0) {
-        parts.push(`cleaned variant spelling on ${canonicalsTouched} canonical${canonicalsTouched === 1 ? '' : 's'}${variantsRemoved > 0 ? ` (${variantsRemoved} became duplicate${variantsRemoved === 1 ? '' : 's'} and were dropped)` : ''}`);
+    if (canonicalPlans.length > 0) {
+        parts.push(`cleaned variant spelling on ${canonicalPlans.length} canonical${canonicalPlans.length === 1 ? '' : 's'}${variantsRemoved > 0 ? ` (${variantsRemoved} became duplicate${variantsRemoved === 1 ? '' : 's'} and were dropped)` : ''}`);
     }
-    if (removedTagsPruned > 0) parts.push(`pruned ${removedTagsPruned} oversized removed-tag entr${removedTagsPruned === 1 ? 'y' : 'ies'} already covered by length removal`);
+    if (prunedRemovedTags.length > 0) parts.push(`pruned ${prunedRemovedTags.length} oversized removed-tag entr${prunedRemovedTags.length === 1 ? 'y' : 'ies'} already covered by length removal`);
     let msg = parts.length > 0 ? `Dictionary Cleanup: ${parts.join(', ')}.` : 'Dictionary Cleanup: no changes to variants or removed tags.';
     if (dupeReport.length > 0) msg += ` Found ${dupeReport.length} possible duplicate canonical${dupeReport.length === 1 ? '' : 's'} — see console (not auto-merged).`;
     toastr.success(msg, 'Tag Merger');
@@ -226,7 +256,7 @@ function buildPanel() {
                     <input type="number" id="ctm-autodelete-maxlength" class="text_pole" min="1" step="1" style="width:4em;" value="${s.autoDeleteMaxLength}">
                     characters
                 </label>
-                <p class="ctm-panel-desc" style="margin-top:4px;">Occasional maintenance for the dictionary itself, not your cards — worth a look if you've been merging tags into it for a while. Asks for confirmation first since it edits variant spelling in place.</p>
+                <p class="ctm-panel-desc" style="margin-top:4px;">Occasional maintenance for the dictionary itself, not your cards — worth a look if you've been merging tags into it for a while. Shows a preview of exactly what would change before it touches anything.</p>
                 <div id="ctm-cleanup" class="menu_button" style="width:100%; text-align:center; margin-top:4px;"
                      title="Rewrites each canonical's variant spelling (trim, strip emoji, drop a leading #, fix simple case) and drops any resulting duplicates. Prunes Removed entries already covered by the length cutoff. Never renames or merges canonicals, and never touches a card — only your saved dictionary.">
                     <i class="fa-solid fa-broom"></i>&nbsp;&nbsp;Dictionary Cleanup
