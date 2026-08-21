@@ -9,7 +9,7 @@
 // "Apply" rewrites every card: each variant becomes its canonical, each removed
 // tag is deleted.
 
-import { buildBuckets, applyRowsToTags, getCardTags, pickCanonical, norm } from './tag-analysis.js';
+import { buildBuckets, applyRowsToTags, getCardTags, pickCanonical, norm, DEFAULT_MAX_TAG_LENGTH } from './tag-analysis.js';
 import { writeCardTags } from './card-writer.js';
 import { saveDictionary, loadBaseDictionary } from './index.js';
 
@@ -22,6 +22,7 @@ let characterList = [];
 let groupSeq = 0;
 let canonicalCategories = {};   // canonical → category name
 let categoryOrder = [];         // category names in dictionary order
+let maxTagLength = DEFAULT_MAX_TAG_LENGTH;  // auto-flag cutoff; 0 disables (from panel settings)
 let baseSnapshot = null;        // serialized base dict for dirty-check
 let resetBtnEl = null;
 let cancelRequested = false;
@@ -128,7 +129,7 @@ function recomputeCounts() {
 
 /** (Re)build the modal's three buckets from a dictionary into `state`. */
 function loadState(mapping, removedTags) {
-    const { groups, unassigned, removed } = buildBuckets(characterList, mapping, removedTags);
+    const { groups, unassigned, removed } = buildBuckets(characterList, mapping, removedTags, { maxTagLength });
     state = {
         groups: groups.map(g => ({
             id: `g${groupSeq++}`,
@@ -146,13 +147,15 @@ function loadState(mapping, removedTags) {
  * @param {object[]} characters
  * @param {Object<string,string[]>} mapping  persistent canonical -> variants dict
  * @param {string[]} [removedTags]  persistent junk list
+ * @param {number} [maxLen]  auto-flag cutoff for long tags; 0 disables (panel setting)
  */
-export function openModal(characters, mapping, removedTags, catCategories = {}, catOrder = [], baseMapping = {}, baseRemovedTags = []) {
+export function openModal(characters, mapping, removedTags, catCategories = {}, catOrder = [], baseMapping = {}, baseRemovedTags = [], maxLen = DEFAULT_MAX_TAG_LENGTH) {
     closeModal();
     characterList = characters;
     groupSeq = 0;
     canonicalCategories = catCategories;
     categoryOrder = catOrder;
+    maxTagLength = maxLen;
     bucketFilter = { unassigned: '', removed: '' };
     selectionBucket = null;
     selected = new Set();
