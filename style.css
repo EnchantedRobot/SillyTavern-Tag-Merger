@@ -229,7 +229,9 @@ details[open] > .ctm-category-header::before { transform: rotate(90deg); }
     margin-bottom: 6px;
 }
 .ctm-excluded-header { font-size: 12px; font-weight: 600; opacity: 0.85; }
-.ctm-excluded-toggle { font-size: 12px; }
+.ctm-excluded-header-actions { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.ctm-excluded-toggle, .ctm-oneoffs-toggle { font-size: 12px; }
+.ctm-excluded-divider { opacity: 0.35; font-size: 11px; }
 .ctm-excluded-empty { font-size: 12px; opacity: 0.5; }
 .ctm-excluded-filter { width: 100%; margin-bottom: 8px; }
 .ctm-excluded-strip {

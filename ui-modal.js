@@ -362,38 +362,49 @@ function buildBucket(kind) {
     const wrap = el(`<div class="ctm-excluded ${meta.cls}"></div>`);
     const inSelection = selectionBucket === kind;
 
-    const oneOffsToggleHtml = kind === 'unassigned' ? `
-        <label class="ctm-oneoffs-toggle" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:0.85em;font-weight:normal;"
-               title="Hide tags that only appear on one card — handy for focusing on the tags worth organizing first.">
-            <input type="checkbox" class="ctm-hide-oneoffs"${hideOneOffs ? ' checked' : ''}>Hide one-offs
-        </label>` : '';
+    // Header actions are a single right-aligned group — same ctm-link idiom
+    // as Select/Cancel, so Hide one-offs reads as part of that group instead
+    // of a stray control pinned to the far edge.
+    const actions = [];
+    // Cancel stays reachable even if hiding one-offs empties the visible
+    // list mid-selection — otherwise there'd be no way back to your
+    // selection short of re-showing one-offs first.
+    if (inSelection || visible.length > 0) actions.push(`<span class="ctm-link ctm-excluded-toggle">${inSelection ? 'Cancel' : 'Select'}</span>`);
+    if (kind === 'unassigned') {
+        actions.push(`<span class="ctm-link ctm-oneoffs-toggle"
+            title="Tags used on only one card can bury the ones worth organizing first — hide them to focus on what matters.">${hideOneOffs ? 'Show one-offs' : 'Hide one-offs'}</span>`);
+    }
+    const actionsHtml = actions.length > 0
+        ? `<span class="ctm-excluded-header-actions">${actions.join('<span class="ctm-excluded-divider">·</span>')}</span>`
+        : '';
 
     const headerRow = el(`<div class="ctm-excluded-header-row">
         <span class="ctm-excluded-header">${meta.header(visible.length)}</span>
-        ${visible.length > 0 ? `<span class="ctm-link ctm-excluded-toggle">${inSelection ? 'Cancel' : 'Select'}</span>` : ''}
-        ${oneOffsToggleHtml}
+        ${actionsHtml}
     </div>`);
     headerRow.querySelector('.ctm-excluded-toggle')?.addEventListener('click', () => {
         selectionBucket = inSelection ? null : kind;
         selected.clear();
         renderBody();
     });
-    headerRow.querySelector('.ctm-hide-oneoffs')?.addEventListener('change', (e) => {
-        hideOneOffs = e.target.checked;
+    headerRow.querySelector('.ctm-oneoffs-toggle')?.addEventListener('click', () => {
+        hideOneOffs = !hideOneOffs;
         renderBody(); // full rebuild keeps the summary/header counts in sync too
     });
     wrap.appendChild(headerRow);
 
+    // Rendered before the empty-list check: a selection made before hiding
+    // one-offs shouldn't vanish along with the list it was made from.
+    if (inSelection && selected.size > 0) wrap.appendChild(buildBulkActionBar(kind));
+
     if (visible.length === 0) {
         const filteredToEmpty = kind === 'unassigned' && hideOneOffs && totalBeforeOneOffs > 0;
         const msg = filteredToEmpty
-            ? 'Every remaining tag here only appears on one card — uncheck "Hide one-offs" to see them.'
+            ? 'Every remaining tag here only appears on one card — click "Show one-offs" above to see them.'
             : meta.empty;
         wrap.appendChild(el(`<div class="ctm-excluded-empty">${msg}</div>`));
         return wrap;
     }
-
-    if (inSelection && selected.size > 0) wrap.appendChild(buildBulkActionBar(kind));
 
     const filter = el(`<input type="text" class="ctm-excluded-filter text_pole" placeholder="Filter ${visible.length} tags…" value="${escapeHtml(bucketFilter[kind])}">`);
     wrap.appendChild(filter);
